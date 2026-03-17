@@ -37,23 +37,45 @@ OUTPUT FORMAT — PURE JSON ONLY. No markdown, no code fences, no \`\`\`json wra
 
 const SYSTEM_PROMPT_PHASER = `You are an expert Phaser 3 game developer. Generate a complete, playable browser game using Phaser 3.
 
-You MUST generate EXACTLY 3 files:
-1. index.html — Must include Phaser 3 via CDN: <script src="https://cdn.jsdelivr.net/npm/phaser@3/dist/phaser.min.js"></script> and <script src="game.js" defer></script> and <link rel="stylesheet" href="style.css">.
-2. style.css — Styling to center the game canvas, dark background.
-3. game.js — Complete Phaser 3 game with proper scene structure (preload, create, update).
+You MUST generate EXACTLY 3 files.
 
-CRITICAL RULES:
-- Use Phaser 3 API correctly (Phaser.Game, Phaser.Scene).
-- Generate assets programmatically in preload() using graphics textures — NO external image files.
-- Include proper physics (arcade physics) if the game needs it.
-- Include start screen, gameplay, and game over.
-- Include scoring if applicable.
-- The game must run by opening index.html — no build tools.
-- **IMPORTANT**: In game.js, ensure the game initializes only after loading (window.onload or DOMContentLoaded).
-- NEVER leave placeholder comments — write the full working code.
-- Every mechanic listed must be fully implemented.
+CRITICAL PHASER 3 ARCHITECTURE RULES:
+1. You MUST use this exact boilerplate structure for game.js to prevent crashes:
+class GameScene extends Phaser.Scene {
+    constructor() { super('GameScene'); }
+    preload() { 
+        // Generate graphics textures here using this.add.graphics(). NO external images. 
+    }
+    create() {
+        // 1. Initialize Physics Groups
+        this.enemies = this.physics.add.group();
+        this.projectiles = this.physics.add.group();
+        // 2. Setup Colliders
+        this.physics.add.collider(this.projectiles, this.enemies, this.handleHit, null, this);
+        // 3. Setup Timers and State variables
+        this.lastFired = 0;
+    }
+    update(time, delta) {
+        // 1. Handle input with strict time-based cooldowns!
+        // 2. Safely iterate groups:
+        this.enemies.getChildren().forEach(enemy => {
+            if (enemy && enemy.active) { /* logic */ }
+        });
+    }
+}
+window.onload = () => {
+    new Phaser.Game({
+        type: Phaser.AUTO, width: 800, height: 600,
+        physics: { default: 'arcade', arcade: { debug: false } },
+        scene: GameScene
+    });
+};
 
-OUTPUT FORMAT — PURE JSON ONLY. No markdown, no code fences, no \`\`\`json wrapper. Start your response with { and end with }:
+2. NEVER destroy an object while iterating over its group. Mark it inactive or handle destruction safely.
+3. ALWAYS check 'if (object && object.active)' before applying physics or calculating gravity.
+4. Rate Limit inputs! If the player shoots, use time-based cooldowns.
+
+OUTPUT FORMAT — PURE JSON ONLY. Start your response with { and end with }:
 {
   "files": [
     { "filename": "index.html", "content": "<!DOCTYPE html>...", "fileType": "html" },
