@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
 import { Gamepad2, LogOut, PanelLeftOpen, PanelLeftClose } from "lucide-react";
+import Image from "next/image";
 
 interface NavbarProps {
   onToggleSidebar: () => void;
@@ -13,11 +14,14 @@ export default function Navbar({ onToggleSidebar, isSidebarOpen }: NavbarProps) 
   const { data: session } = useSession();
 
   return (
-    <header className="h-14 border-b border-border bg-card/50 backdrop-blur-sm flex items-center justify-between px-4 shrink-0">
+    <header className="h-14 border-b border-border/60 glass-strong flex items-center justify-between px-4 shrink-0 relative">
+      {/* Subtle gradient accent line at bottom */}
+      <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/20 to-transparent" />
+
       <div className="flex items-center gap-3">
         <button
           onClick={onToggleSidebar}
-          className="p-2 hover:bg-secondary rounded-lg transition-colors text-muted-foreground hover:text-foreground"
+          className="hidden md:flex p-2 hover:bg-secondary/80 rounded-lg transition-all duration-200 text-muted-foreground hover:text-foreground"
           title={isSidebarOpen ? "Close sidebar" : "Open sidebar"}
         >
           {isSidebarOpen ? (
@@ -26,28 +30,27 @@ export default function Navbar({ onToggleSidebar, isSidebarOpen }: NavbarProps) 
             <PanelLeftOpen className="w-5 h-5" />
           )}
         </button>
-        <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-          <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center border border-primary/20">
-            <Gamepad2 className="w-4 h-4 text-primary" />
+        <Link href="/" className="flex items-center gap-2.5 hover:opacity-80 transition-opacity">
+          <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-gradient-to-br from-pink-400 to-primary text-white shadow-md shadow-primary/20">
+            <span className="font-bold text-sm tracking-tighter"><Image src="/logo.png" alt="Logo" width={24} height={24} /></span>
           </div>
-          <span className="font-semibold text-sm hidden sm:inline">
-            AI Game Builder
-          </span>
+          <span className="font-bold tracking-tight text-slate-800 hidden sm:block">CodPlay</span>
         </Link>
       </div>
 
       <div className="flex items-center gap-3">
         {session?.user && (
           <>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2.5">
               {session.user.image ? (
                 <img
                   src={session.user.image}
                   alt={session.user.name || "User"}
-                  className="w-7 h-7 rounded-full"
+                  className="w-7 h-7 rounded-full ring-2 ring-primary/10"
                 />
               ) : (
-                <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-xs font-medium text-primary border border-primary/20">
+                <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-medium
+                  bg-gradient-to-br from-primary/20 to-accent/10 text-primary border border-primary/20">
                   {(session.user.name || session.user.email || "U")[0].toUpperCase()}
                 </div>
               )}
@@ -57,7 +60,7 @@ export default function Navbar({ onToggleSidebar, isSidebarOpen }: NavbarProps) 
             </div>
             <button
               onClick={() => signOut({ callbackUrl: "/" })}
-              className="p-2 hover:bg-secondary rounded-lg transition-colors text-muted-foreground hover:text-foreground"
+              className="p-2 hover:bg-secondary/80 rounded-lg transition-all duration-200 text-muted-foreground hover:text-foreground"
               title="Sign out"
             >
               <LogOut className="w-4 h-4" />

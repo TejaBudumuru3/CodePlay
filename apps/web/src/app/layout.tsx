@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "AI Game Builder",
+  title: "CodePlay",
   description: "Build browser games with AI agents",
 };
 

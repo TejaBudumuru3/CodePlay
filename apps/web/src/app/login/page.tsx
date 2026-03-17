@@ -4,6 +4,7 @@ import { signIn } from "next-auth/react";
 import { Gamepad2, AlertCircle } from "lucide-react";
 import { useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
+import Image from "next/image";
 
 const errorMessages: Record<string, string> = {
   Configuration: "Server configuration error. Check that DATABASE_URL and NEXTAUTH_SECRET are set in .env.local.",
@@ -33,46 +34,51 @@ function LoginContent() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background relative overflow-hidden">
-      {/* Background gradient effects */}
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-primary/10 rounded-full blur-3xl" />
-        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-primary/5 rounded-full blur-3xl" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-primary/5 rounded-full blur-3xl" />
+      {/* Animated background orbs */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-32 -right-32 w-80 h-80 bg-primary/10 rounded-full blur-3xl animate-float" />
+        <div className="absolute -bottom-32 -left-32 w-80 h-80 bg-accent/8 rounded-full blur-3xl animate-float-delayed" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-primary/4 rounded-full blur-3xl animate-float-slow" />
       </div>
 
       {/* Login card */}
-      <div className="relative z-10 w-full max-w-md mx-4">
-        <div className="bg-card border border-border rounded-2xl p-8 shadow-2xl shadow-primary/5">
+      <div className="relative z-10 w-full max-w-md mx-4 animate-slide-up">
+        <div className="glass-strong rounded-3xl p-8 sm:p-10 shadow-2xl shadow-primary/5 gradient-border">
           {/* Logo */}
           <div className="flex flex-col items-center mb-8">
-            <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mb-4 border border-primary/20">
-              <Gamepad2 className="w-8 h-8 text-primary" />
+            <div className="w-18 h-18 rounded-2xl flex items-center justify-center mb-5
+              bg-gradient-to-br from-primary/15 to-accent/10 border border-primary/20 animate-glow-pulse"
+              style={{ width: '4.5rem', height: '4.5rem' }}>
+              <Image src="/logo.png" alt="Logo" width={80} height={80} />
             </div>
-            <h1 className="text-2xl font-bold text-foreground">
-              AI Game Builder
+            <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">
+              CodePlay
             </h1>
-            <p className="text-muted-foreground text-sm mt-2 text-center">
+            <p className="text-muted-foreground text-sm mt-2.5 text-center max-w-xs leading-relaxed">
               Describe your game idea and let AI agents build it for you
             </p>
           </div>
 
           {/* Error banner */}
           {errorMessage && (
-            <div className="flex items-start gap-2 p-3 mb-4 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive">
+            <div className="flex items-start gap-2.5 p-3.5 mb-5 rounded-xl bg-destructive/8 border border-destructive/20 text-destructive">
               <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
               <p className="text-xs leading-relaxed">{errorMessage}</p>
             </div>
           )}
 
           {/* Sign in buttons */}
-          <div className="space-y-3">
+          <div className="space-y-3.5">
             <button
               onClick={handleGoogleSignIn}
               disabled={isLoading !== null}
-              className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-white text-gray-800 rounded-xl font-medium hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full flex items-center justify-center gap-3 px-5 py-3.5 bg-white text-gray-800 rounded-xl font-medium
+                hover:bg-gray-50 transition-all duration-300
+                hover:shadow-lg hover:shadow-white/10 hover:scale-[1.01] active:scale-[0.99]
+                disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
             >
               {isLoading === "google" ? (
-                <div className="w-5 h-5 border-2 border-gray-400 border-t-gray-800 rounded-full animate-spin" />
+                <div className="w-5 h-5 border-2 border-gray-300 border-t-gray-800 rounded-full animate-spin" />
               ) : (
                 <svg className="w-5 h-5" viewBox="0 0 24 24">
                   <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" />
@@ -84,19 +90,22 @@ function LoginContent() {
               Sign in with Google
             </button>
 
-            <div className="relative my-4">
+            <div className="relative my-5">
               <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-border" />
+                <div className="w-full border-t border-border/60" />
               </div>
-              <div className="relative flex justify-center text-xs">
-                <span className="bg-card px-2 text-muted-foreground">or</span>
+              <div className="relative flex justify-center mx-2 text-xs">
+                <span className="text-muted-foreground px-2 bg-white">or</span>
               </div>
             </div>
 
             <button
               onClick={handleGuestSignIn}
               disabled={isLoading !== null}
-              className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-secondary text-secondary-foreground rounded-xl font-medium hover:bg-secondary/80 transition-colors border border-border disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full flex items-center justify-center gap-3 px-5 py-3.5 rounded-xl font-medium transition-all duration-300
+                bg-secondary/60 text-secondary-foreground border border-border
+                hover:bg-secondary hover:border-primary/20 hover:scale-[1.01] active:scale-[0.99]
+                disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
             >
               {isLoading === "guest" ? (
                 <div className="w-5 h-5 border-2 border-muted-foreground border-t-foreground rounded-full animate-spin" />
@@ -106,7 +115,7 @@ function LoginContent() {
           </div>
 
           {/* Footer note */}
-          <p className="text-xs text-muted-foreground text-center mt-6">
+          <p className="text-xs text-muted-foreground/70 text-center mt-7">
             Guest mode saves only your latest game. Sign in to keep history.
           </p>
         </div>
@@ -122,4 +131,3 @@ export default function LoginPage() {
     </Suspense>
   );
 }
-

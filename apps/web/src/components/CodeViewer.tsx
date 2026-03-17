@@ -37,7 +37,6 @@ export default function CodeViewer() {
       ? `${plan.title.replace(/[^a-zA-Z0-9]/g, "_")}.zip`
       : "game.zip";
 
-    // Native download — avoids file-saver saveBlob issues in modern browsers
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -71,24 +70,35 @@ export default function CodeViewer() {
     return FileCode2;
   };
 
+  const getFileColor = (filename: string) => {
+    if (filename.endsWith(".html")) return "text-orange-400";
+    if (filename.endsWith(".css")) return "text-blue-400";
+    if (filename.endsWith(".js")) return "text-yellow-400";
+    return "text-muted-foreground";
+  };
+
   const activeFile = code?.files.find((f) => f.filename === activeTab);
 
   // Empty state
   if (status !== "COMPLETED" || !code) {
     return (
       <div className="flex flex-col h-full">
-        <div className="flex items-center px-4 py-3 border-b border-border shrink-0">
-          <h2 className="text-sm font-semibold text-foreground">Code</h2>
+        <div className="flex items-center px-4 py-3 border-b border-border/60 shrink-0 bg-card/30">
+          <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
+            <FileCode2 className="w-3.5 h-3.5 text-muted-foreground" />
+            Code
+          </h2>
         </div>
         <div className="flex-1 flex items-center justify-center p-8">
           <div className="text-center">
-            <div className="w-16 h-16 bg-secondary rounded-2xl flex items-center justify-center mx-auto mb-4 border border-border">
-              <FileCode2 className="w-8 h-8 text-muted-foreground" />
+            <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4
+              bg-gradient-to-br from-primary/8 to-accent/5 border border-border">
+              <FileCode2 className="w-8 h-8 text-muted-foreground/40" />
             </div>
-            <h3 className="text-sm font-medium text-muted-foreground mb-1">
+            <h3 className="text-sm font-medium text-muted-foreground mb-1.5">
               No code yet
             </h3>
-            <p className="text-xs text-muted-foreground/70">
+            <p className="text-xs text-muted-foreground/60 max-w-xs">
               Start a conversation to generate game code
             </p>
           </div>
@@ -100,24 +110,26 @@ export default function CodeViewer() {
   return (
     <div className="flex flex-col h-full">
       {/* Header with tabs */}
-      <div className="border-b border-border shrink-0">
-        <div className="flex items-center justify-between px-4 py-2">
-          <div className="flex items-center gap-1">
+      <div className="border-b border-border/60 shrink-0 bg-card/30">
+        <div className="flex items-center justify-between px-3 py-2">
+          <div className="flex items-center gap-0.5">
             {code.files.map((file) => {
               const Icon = getFileIcon(file.filename);
+              const color = getFileColor(file.filename);
               return (
                 <button
                   key={file.filename}
                   onClick={() => setActiveTab(file.filename)}
                   className={cn(
-                    "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors",
+                    "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200",
                     activeTab === file.filename
-                      ? "bg-primary/10 text-primary border border-primary/20"
-                      : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+                      ? `bg-primary/8 ${color} border border-primary/15`
+                      : "text-muted-foreground hover:text-foreground hover:bg-secondary/60 border border-transparent"
                   )}
                 >
                   <Icon className="w-3.5 h-3.5" />
-                  {file.filename}
+                  <span className="hidden sm:inline">{file.filename}</span>
+                  <span className="sm:hidden">{file.filename.split('.').pop()?.toUpperCase()}</span>
                 </button>
               );
             })}
@@ -125,33 +137,37 @@ export default function CodeViewer() {
           <div className="flex items-center gap-1">
             <button
               onClick={handleCopy}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs text-muted-foreground
+                hover:text-foreground hover:bg-secondary/60 transition-all duration-200"
             >
               {copied ? (
                 <Check className="w-3.5 h-3.5 text-success" />
               ) : (
                 <Copy className="w-3.5 h-3.5" />
               )}
-              {copied ? "Copied" : "Copy"}
+              <span className="hidden sm:inline">{copied ? "Copied" : "Copy"}</span>
             </button>
             <button
               onClick={handleDownloadZip}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs bg-primary text-primary-foreground hover:bg-primary/90 transition-colors font-medium"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200
+                bg-gradient-to-r from-primary to-indigo-500 text-primary-foreground
+                hover:shadow-md hover:shadow-primary/20 hover:scale-[1.02] active:scale-[0.98]"
             >
               <Download className="w-3.5 h-3.5" />
-              Download ZIP
+              <span className="hidden sm:inline">Download ZIP</span>
+              <span className="sm:hidden">ZIP</span>
             </button>
           </div>
         </div>
       </div>
 
       {/* Code display */}
-      <div className="flex-1 overflow-auto">
+      <div className="flex-1 overflow-auto p-2">
         {activeFile && (
-          <pre className="!m-0 !rounded-none !bg-[#0d0d12] min-h-full">
+          <pre className=" bg-white min-h-full">
             <code
               ref={codeRef}
-              className={`language-${getLanguage(activeFile.filename)}`}
+              className={`language-${getLanguage(activeFile.filename)} border-none bg-white`}
             >
               {activeFile.content}
             </code>
@@ -161,12 +177,12 @@ export default function CodeViewer() {
 
       {/* Footer info */}
       {plan && (
-        <div className="px-4 py-2 border-t border-border bg-card/50 shrink-0">
+        <div className="px-4 py-2 border-t border-border/60 bg-card/30 shrink-0">
           <div className="flex items-center justify-between text-xs text-muted-foreground">
-            <span>
+            <span className="truncate mr-2">
               {plan.title} — {plan.framework === "phaser" ? "Phaser 3" : "Vanilla JS"}
             </span>
-            <span>{code.files.length} files</span>
+            <span className="shrink-0">{code.files.length} files</span>
           </div>
         </div>
       )}

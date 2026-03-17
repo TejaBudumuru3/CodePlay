@@ -1,41 +1,147 @@
 "use client";
 
 import { useState } from "react";
-import { GameBuilderProvider } from "@/context/GameBuilderContext";
-import Navbar from "@/components/Navbar";
+import { GameBuilderProvider, useGameBuilder } from "@/context/GameBuilderContext";
+import { MessageSquare, Code2, Play, PanelRightClose, PanelRightOpen } from "lucide-react";
 import SessionHistory from "@/components/SessionHistory";
 import ChatInterface from "@/components/ChatInterface";
 import CodeViewer from "@/components/CodeViewer";
+import GamePreview from "@/components/GamePreview";
+import { cn } from "@/lib/utils";
+import Image from "next/image";
 
-export default function BuilderPage() {
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+type MobileTab = "chat" | "code" | "preview";
+
+import { LogOut, User as UserIcon } from "lucide-react";
+import { signOut, useSession } from "next-auth/react";
+import Link from "next/link";
+
+function BuilderLayout() {
+  const { data: session } = useSession();
+  const [activeTab, setActiveTab] = useState<MobileTab>("chat");
+  const [showHistoryPanel, setShowHistoryPanel] = useState(false);
+
+  const tabs: { id: MobileTab; label: string; icon: typeof MessageSquare }[] = [
+    { id: "chat", label: "Chat", icon: MessageSquare },
+    { id: "code", label: "Code", icon: Code2 },
+    { id: "preview", label: "Preview", icon: Play },
+  ];
 
   return (
-    <GameBuilderProvider>
-      <div className="h-screen flex flex-col overflow-hidden">
-        <Navbar
-          onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
-          isSidebarOpen={sidebarOpen}
-        />
+    <div className="h-screen w-full flex overflow-hidden relative bg-[#fff5fa] font-sans">
+      {/* Global Gradient Background covering the ENTIRE page */}
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_0%_30%,rgba(255,240,245,0.8),transparent_50%),radial-gradient(circle_at_100%_80%,rgba(240,248,255,0.8),transparent_40%),radial-gradient(circle_at_50%_50%,rgba(255,245,238,0.5),transparent_60%)] pointer-events-none z-0"></div>
 
-        <div className="flex-1 flex overflow-hidden">
-          {/* Session History Sidebar */}
-          <SessionHistory isOpen={sidebarOpen} />
+      {/* ═══ Left Floating Sidebar (Desktop) ═══ */}
+      <div className="hidden md:flex flex-col items-center w-[72px] bg-white/70 backdrop-blur-3xl border border-white/60 m-4 rounded-[24px] py-6 shadow-[0_8px_32px_rgba(0,0,0,0.06)] z-50 shrink-0">
+        {/* Logo at top */}
+        <Link href="/" className="w-11 h-11 rounded-lg bg-white shadow-inner flex items-center justify-center mb-8 shrink-0">
+          <span className="font-bold text-lg tracking-tighter"><Image src="/logo.png" alt="Logo" width={80} height={80} /></span>
+        </Link>
 
-          {/* Main content area */}
-          <div className="flex-1 flex overflow-hidden">
-            {/* Chat Panel */}
-            <div className="w-full lg:w-[40%] border-r border-border flex flex-col overflow-hidden">
-              <ChatInterface />
-            </div>
+        {/* Navigation Tabs Center */}
+        <div className="flex flex-col gap-4 flex-1 w-full items-center">
+          {tabs.map((tab) => {
+            const isActive = activeTab === tab.id;
+            const Icon = tab.icon;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={cn(
+                  "w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 relative group",
+                  isActive ? "bg-gradient-to-br from-pink-100 to-purple-100 shadow-[0_4px_12px_rgba(236,72,153,0.15)]" : "hover:bg-slate-50 text-slate-400"
+                )}
+                title={tab.label}
+              >
+                <Icon className={cn("w-5 h-5", isActive ? "text-slate-800" : "text-slate-400 group-hover:text-slate-600")} />
+              </button>
+            );
+          })}
+        </div>
 
-            {/* Code Panel - hidden on mobile, shown on lg+ */}
-            <div className="hidden lg:flex lg:w-[60%] flex-col overflow-hidden">
-              <CodeViewer />
-            </div>
+        {/* Bottom User Actions */}
+        <div className="flex flex-col gap-4 items-center shrink-0 w-full mt-auto">
+          <div className="w-10 h-10 rounded-full bg-slate-100 border-2 border-white shadow-sm flex items-center justify-center cursor-pointer hover:bg-slate-200 transition-colors overflow-hidden">
+            {session?.user?.image ? (
+              <img src={session.user.image} alt="User" className="w-full h-full object-cover" />
+            ) : (
+              <UserIcon className="w-4 h-4 text-slate-500" />
+            )}
           </div>
+
+          {session?.user && (
+            <button onClick={() => signOut({ callbackUrl: "/" })} className="w-10 h-10 rounded-full flex items-center justify-center hover:bg-slate-50 text-slate-400 hover:text-red-500 transition-colors" title="Log out">
+              <LogOut className="w-[18px] h-[18px] ml-1" />
+            </button>
+          )}
         </div>
       </div>
+
+      {/* ═══ Main Content Area ═══ */}
+      <div className="flex-1 flex flex-col overflow-hidden relative z-10 w-full">
+        {/* Main tabs view - switching between Chat, Code, Preview */}
+        <div className="flex-1 w-full h-full relative">
+          {activeTab === "chat" && (
+            <ChatInterface
+              onToggleHistory={() => setShowHistoryPanel(!showHistoryPanel)}
+              isHistoryExpanded={showHistoryPanel}
+            />
+          )}
+
+          {activeTab === "code" && (
+            <div className="w-full h-full animate-fade-in flex flex-col pt-4 pr-4 pb-4">
+              <div className="flex-1 bg-white/80 backdrop-blur-3xl rounded-[24px] border border-white/60 shadow-[0_8px_40px_rgba(0,0,0,0.05)] overflow-hidden">
+                <CodeViewer />
+              </div>
+            </div>
+          )}
+
+          {activeTab === "preview" && (
+            <div className="w-full h-full animate-fade-in flex flex-col pt-4 pr-4 pb-4">
+              <div className="flex-1 bg-white/80 backdrop-blur-3xl rounded-[24px] border border-white/60 shadow-[0_8px_40px_rgba(0,0,0,0.05)] overflow-hidden">
+                <GamePreview />
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Right Floating History Panel */}
+        <div className={cn(
+          "absolute right-4 top-4 bottom-4 z-50 transition-all duration-500 ease-in-out bg-white/80 backdrop-blur-3xl rounded-[24px] border border-white/60 shadow-[0_8px_32px_rgba(0,0,0,0.08)] overflow-hidden flex flex-col pointer-events-auto",
+          showHistoryPanel ? "translate-x-0 opacity-100 w-[300px] xl:w-[320px]" : "translate-x-[120%] opacity-0 w-[300px] xl:w-[320px] pointer-events-none"
+        )}>
+          <SessionHistory isOpen={true} onClose={() => setShowHistoryPanel(false)} />
+        </div>
+      </div>
+
+      {/* Mobile Tab Bar */}
+      <div className="flex md:hidden absolute bottom-0 left-0 right-0 border-t border-white/60 bg-white/80 shrink-0 backdrop-blur-xl pb-safe z-50">
+        {tabs.map(({ id, label, icon: Icon }) => (
+          <button
+            key={id}
+            onClick={() => setActiveTab(id)}
+            className={cn(
+              "flex-1 flex flex-col items-center gap-1 py-3 text-[10px] font-medium transition-all duration-200",
+              activeTab === id
+                ? "text-primary"
+                : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            <Icon className={cn("w-5 h-5", activeTab === id && "drop-shadow-[0_0_8px_rgba(244,114,182,0.5)]")} />
+            {label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+
+export default function BuilderPage() {
+  return (
+    <GameBuilderProvider>
+      <BuilderLayout />
     </GameBuilderProvider>
   );
 }
