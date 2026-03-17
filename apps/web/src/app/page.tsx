@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import {
   Gamepad2,
@@ -9,25 +11,33 @@ import {
   Code2,
   MessageSquare,
   ChevronRight,
-  Star,
   Play,
   ArrowRight,
   ShieldCheck,
-  Globe
+  Globe,
+  Share2,
+  Bookmark,
+  Star,
+  Layers,
+  Cpu
 } from "lucide-react";
 import Image from "next/image";
+import { useSession } from "next-auth/react";
 
 export default function LandingPage() {
+  const { status } = useSession();
+  const ctaHref = status === "authenticated" ? "/builder" : "/login";
+
   return (
     <div className="min-h-screen bg-background text-foreground selection:bg-primary/20">
       {/* ═══ Navbar ═══ */}
       <header className="fixed top-0 left-0 right-0 z-50 glass-strong border-b-0 border-white/40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-18 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-white text-white shadow-md shadow-primary/20">
+            <div className="w-10 h-10 rounded-lg bg-white text-white shadow-md shadow-indigo-500/20">
               <span className="font-bold text-lg tracking-tighter object-cover"><Image src="/logo.png" alt="Logo" width={100} height={100} /></span>
             </div>
-            <span className="font-bold text-lg tracking-tight text-slate-800">CodPlay</span>
+            <span className="font-bold text-lg tracking-tight text-slate-800">CodePlay</span>
           </div>
 
           <div className="flex gap-6 text-sm font-medium text-slate-500">
@@ -36,13 +46,13 @@ export default function LandingPage() {
 
           <div className="flex items-center gap-3">
             <Link
-              href="/login"
+              href={ctaHref}
               className="text-sm font-medium text-slate-600 hover:text-primary transition-colors hidden sm:inline-flex"
             >
-              Log in
+              {status === "authenticated" ? "" : "Log in"}
             </Link>
             <Link
-              href="/login"
+              href={ctaHref}
               className="flex items-center gap-1.5 text-sm px-6 py-2.5 rounded-full font-semibold transition-all duration-300
                 bg-slate-900 text-white shadow-lg shadow-slate-900/20
                 hover:bg-slate-800 hover:scale-[1.02] active:scale-[0.98]"
@@ -58,8 +68,8 @@ export default function LandingPage() {
       <section className="relative pt-40 pb-20 sm:pt-48 sm:pb-32 lg:pt-56 lg:pb-40 px-4 overflow-hidden mesh-gradient">
         {/* Floating decorative elements */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute top-20 left-[10%] w-72 h-72 bg-pink-400/10 rounded-full blur-3xl animate-float" />
-          <div className="absolute top-40 right-[10%] w-96 h-96 bg-sky-400/10 rounded-full blur-3xl animate-float-delayed" />
+          <div className="absolute top-20 left-[10%] w-72 h-72 bg-indigo-400/10 rounded-full blur-3xl animate-float" />
+          <div className="absolute bottom-40 right-[15%] w-96 h-96 bg-blue-400/10 rounded-full blur-3xl animate-float-slow" />
           <div className="absolute bottom-20 left-[40%] w-80 h-80 bg-violet-400/10 rounded-full blur-3xl animate-float-slow" />
         </div>
 
@@ -73,8 +83,8 @@ export default function LandingPage() {
           <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-[5.5rem] font-extrabold tracking-tight text-slate-900 leading-[1.05] mb-8 animate-slide-up"
             style={{ animationDelay: '0.1s' }}>
             Imagine a game. <br className="hidden sm:block" />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-pink-500 via-purple-500 to-sky-500">
-              Watch it come alive.
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-500 via-blue-500 to-sky-500">
+              World's #1 Game Builder
             </span>
           </h1>
 
@@ -86,10 +96,10 @@ export default function LandingPage() {
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-slide-up"
             style={{ animationDelay: '0.3s' }}>
             <Link
-              href="/login"
-              className="flex items-center gap-2.5 px-8 py-4 rounded-full font-bold text-base transition-all duration-300
-                bg-gradient-to-r from-pink-500 to-purple-600 text-white
-                shadow-xl shadow-pink-500/25 hover:shadow-pink-500/40 hover:-translate-y-1 active:scale-[0.98]"
+              href={ctaHref}
+              className="inline-flex items-center gap-2.5 px-8 py-4 rounded-full font-bold text-base transition-all duration-300
+                bg-gradient-to-r from-indigo-600 to-blue-700 text-white
+                shadow-xl shadow-indigo-500/25 hover:shadow-indigo-500/40 hover:-translate-y-1 active:scale-[0.98]"
             >
               <Play className="w-5 h-5 fill-current" />
               Start Creating for Free
@@ -129,22 +139,22 @@ export default function LandingPage() {
 
           <div className="grid lg:grid-cols-2 gap-16 items-center">
             <div className="order-2 lg:order-1 relative">
-              <div className="absolute inset-0 bg-gradient-to-tr from-sky-200 to-pink-200 blur-3xl opacity-50 rounded-full"></div>
-              <div className="relative bg-slate-50 border border-slate-200 rounded-3xl p-2 shadow-2xl rotate-[-2deg] hover:rotate-0 transition-transform duration-500">
+              <div className="absolute inset-0 bg-gradient-to-tr from-sky-200 to-indigo-200 blur-3xl opacity-50 rounded-full"></div>
+              <div className="relative bg-slate-50 border border-slate-200 rounded-3xl p-2 shadow-2xl rotate-0 sm:rotate-[-2deg] hover:rotate-0 transition-transform duration-500 scale-[0.85] sm:scale-100 origin-center">
                 <div className="bg-white rounded-2xl overflow-hidden border border-slate-100 shadow-inner aspect-[4/3] flex flex-col">
                   <div className="h-10 border-b border-slate-100 flex items-center px-4 gap-2 bg-slate-50/50">
                     <div className="w-3 h-3 rounded-full bg-red-400"></div>
                     <div className="w-3 h-3 rounded-full bg-amber-400"></div>
                     <div className="w-3 h-3 rounded-full bg-green-400"></div>
                   </div>
-                  <div className="flex-1 p-6 font-mono text-sm text-slate-600 bg-[#fafafc]">
-                    <span className="text-pink-500">const</span> game = <span className="text-purple-500">new</span> Phaser.Game(config);<br /><br />
+                  <div className="flex-1 p-4 sm:p-6 font-mono text-[11px] sm:text-sm text-slate-600 bg-[#fafafc] overflow-hidden">
+                    <span className="text-indigo-500">const</span> game = <span className="text-purple-500">new</span> Phaser.Game(config);<br /><br />
                     <span className="text-slate-400">// Automatically generated by AI</span><br />
                     <span className="text-sky-500">function</span> <span className="text-amber-500">create</span>() {'{'}<br />
                     &nbsp;&nbsp;this.add.image(400, 300, <span className="text-green-500">'sky'</span>);<br />
                     &nbsp;&nbsp;player = this.physics.add.sprite(100, 450, <span className="text-green-500">'dude'</span>);<br />
                     &nbsp;&nbsp;player.setBounce(0.2);<br />
-                    &nbsp;&nbsp;player.setCollideWorldBounds(<span className="text-pink-500">true</span>);<br />
+                    &nbsp;&nbsp;player.setCollideWorldBounds(<span className="text-indigo-500">true</span>);<br />
                     {'}'}
                   </div>
                 </div>
@@ -153,8 +163,8 @@ export default function LandingPage() {
 
             <div className="order-1 lg:order-2 space-y-10">
               <div className="flex gap-4">
-                <div className="w-12 h-12 rounded-xl bg-pink-100 text-pink-600 flex items-center justify-center shrink-0 shadow-inner">
-                  <Code2 className="w-6 h-6" />
+                <div className="w-12 h-12 rounded-xl bg-indigo-100 text-indigo-600 flex items-center justify-center shrink-0 shadow-inner">
+                  <Wrench className="w-6 h-6" />
                 </div>
                 <div>
                   <h4 className="text-xl font-bold text-slate-900 mb-2">Production-Ready Code</h4>
@@ -186,54 +196,100 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ═══ The Pipeline (How It Works) ═══ */}
-      <section id="how-it-works" className="py-24 sm:py-32 px-4 bg-slate-50 border-y border-slate-200">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-20">
-            <h2 className="text-primary font-bold tracking-wide uppercase text-sm mb-3">Our Technology</h2>
-            <h3 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-slate-900 mb-4">A Multi-Agent Symphony</h3>
-            <p className="text-slate-600 text-lg max-w-2xl mx-auto">
+      <section id="how-it-works" className="py-24 sm:py-32 px-4 bg-white border-y border-slate-200 relative overflow-hidden">
+        {/* Dynamic Background Elements for Glassmorphism Contrast */}
+        <div className="absolute top-1/2 left-0 w-[500px] h-[500px] bg-indigo-200/40 rounded-full blur-[120px] -translate-y-1/2 -translate-x-1/2 pointer-events-none" />
+        <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-cyan-200/30 rounded-full blur-[100px] pointer-events-none" />
+        <div className="absolute bottom-0 right-[20%] w-[300px] h-[300px] bg-purple-200/30 rounded-full blur-[100px] pointer-events-none" />
+
+        <div className="max-w-7xl mx-auto relative z-10">
+          <div className="text-center mb-16 relative">
+            <h2 className="text-indigo-600 font-bold tracking-widest uppercase text-xs mb-3">Our Technology</h2>
+            <h3 className="text-4xl sm:text-5xl lg:text-6xl font-black text-slate-900 mb-6 tracking-tight">A Multi-Agent Symphony</h3>
+            <p className="text-slate-500 text-lg max-w-2xl mx-auto font-medium leading-relaxed">
               Behind the scenes, specialized AI agents act as your personal game studio, passing context seamlessly from concept to deployment.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 relative max-w-5xl mx-auto">
-            {/* Connector line for desktop */}
-            <div className="hidden md:block absolute top-12 left-[15%] right-[15%] h-1 bg-gradient-to-r from-pink-300 via-purple-300 to-sky-300 rounded-full z-0" />
-
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 relative max-w-6xl mx-auto">
             {[
               {
-                icon: Brain,
-                step: "01",
+                icon: Layers,
                 name: "The Clarifier",
-                color: "text-pink-600",
-                bg: "bg-pink-100",
-                description: "Analyzes your raw idea to deduce implied mechanics, saving you from answering endless questions.",
+                role: "Logic Architect",
+                traits: [
+                  { label: "Deduction", value: "High" },
+                  { label: "Coherence", value: "Pure" },
+                  { label: "Precision", value: "99%" },
+                ],
+                accent: "from-cyan-400/40",
+                iconColor: "text-cyan-600",
+                action: "Define Logic Architecture",
+                actionGradient: "group-hover:from-cyan-400/40 group-hover:to-cyan-500/50",
+                ring: "group-hover:ring-cyan-500/30",
               },
               {
-                icon: Sparkles,
-                step: "02",
+                icon: Zap,
                 name: "The Planner",
-                color: "text-purple-600",
-                bg: "bg-purple-100",
-                description: "Drafts a robust Game Design Document (GDD) and chooses the best framework logic for your title.",
+                role: "Systems Designer",
+                traits: [
+                  { label: "Scalability", value: "Lead" },
+                  { label: "User Flow", value: "Expert" },
+                  { label: "System Map", value: "Elite" },
+                ],
+                accent: "from-indigo-400/40",
+                iconColor: "text-indigo-600",
+                action: "Generate System Blueprint",
+                actionGradient: "group-hover:from-indigo-400/40 group-hover:to-indigo-500/50",
+                ring: "group-hover:ring-indigo-500/30",
               },
               {
-                icon: Wrench,
-                step: "03",
+                icon: Cpu,
                 name: "The Coder",
-                color: "text-sky-600",
-                bg: "bg-sky-100",
-                description: "Translates the architecture into flawless code and wires up the UI, Physics, and Game Loop.",
+                role: "Lead Engineer",
+                traits: [
+                  { label: "Multi-Stack", value: "Core" },
+                  { label: "Efficiency", value: "Peak" },
+                  { label: "Runtime Opt", value: "Fast" },
+                ],
+                accent: "from-emerald-400/40",
+                iconColor: "text-emerald-600",
+                action: "Build Game Engine",
+                actionGradient: "group-hover:from-emerald-400/40 group-hover:to-emerald-500/50",
+                ring: "group-hover:ring-emerald-500/30",
               },
-            ].map(({ icon: Icon, step, name, color, bg, description }) => (
-              <div key={step} className="relative z-10 flex flex-col items-center text-center p-8 rounded-3xl bg-white border border-slate-200 shadow-xl shadow-slate-200/50 hover:-translate-y-2 transition-transform duration-300">
-                <div className={`w-20 h-20 rounded-2xl flex items-center justify-center ${bg} ${color} mb-6 shadow-inner ring-4 ring-white`}>
-                  <Icon className="w-10 h-10" />
+            ].map(({ icon: Icon, name, role, traits, accent, iconColor, action, actionGradient, ring }) => (
+              <div key={name} className={`group relative flex flex-col pt-10 pb-8 px-8 rounded-[40px] bg-white/10 backdrop-blur-[80px] border border-white/50 shadow-xl hover:-translate-y-3 transition-all duration-700 overflow-hidden items-center ring-0 ${ring}`}>
+                {/* Internal Glow Bleed - Vibrant & Designer Grade */}
+                <div className={`absolute bottom-0 left-0 right-0 h-2/3 bg-gradient-to-t ${accent} to-transparent blur-[80px] opacity-30 group-hover:opacity-70 transition-opacity duration-700`} />
+
+                {/* Avatar / Icon Bubble */}
+                <div className="w-20 h-20 rounded-full flex items-center justify-center bg-white/80 shadow-[0_8px_25px_rgba(0,0,0,0.05)] mb-6 relative z-10 border-[4px] border-white ring-1 ring-slate-100 group-hover:scale-110 transition-transform duration-500">
+                  <Icon className={`w-9 h-9 ${iconColor} group-hover:rotate-12 transition-transform duration-500`} />
                 </div>
-                <div className="text-sm font-bold text-slate-400 mb-2 uppercase tracking-widest">Step {step}</div>
-                <h4 className="font-extrabold text-xl text-slate-900 mb-3">{name}</h4>
-                <p className="text-slate-600 font-medium leading-relaxed">{description}</p>
+
+                {/* Identity */}
+                <div className="mb-6 relative z-10 text-center">
+                  <h4 className="text-xl font-black text-slate-900 tracking-tight mb-1">{name}</h4>
+                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">{role}</p>
+                </div>
+
+                {/* Traits Grid */}
+                <div className="w-full grid grid-cols-3 gap-0 py-5 border-y border-slate-900/5 mb-7 relative z-10">
+                  {traits.map((trait, idx) => (
+                    <div key={trait.label} className={`text-center ${idx === 1 ? 'border-x border-slate-900/5' : ''}`}>
+                      <div className="text-xs font-black text-slate-900 mb-0.5">{trait.value}</div>
+                      <div className="text-[8px] text-slate-400 uppercase font-black tracking-widest leading-none">{trait.label}</div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Integrated Action Area - Glassy Gradient */}
+                <div className={`w-full py-4 px-6 rounded-2xl bg-white/5 backdrop-blur-sm border border-white/20 flex items-center justify-center text-center relative z-10 transition-all duration-500 bg-gradient-to-br from-transparent to-transparent ${actionGradient} group-hover:shadow-lg active:scale-95`}>
+                  <span className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-800 transition-transform duration-500 group-hover:scale-105">
+                    {action}
+                  </span>
+                </div>
               </div>
             ))}
           </div>
@@ -256,10 +312,10 @@ export default function LandingPage() {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
-              href="/login"
+              href={ctaHref}
               className="flex items-center justify-center gap-2.5 px-10 py-5 rounded-full font-bold text-lg transition-all duration-300
-                bg-gradient-to-r from-pink-500 to-purple-600 text-white
-                hover:shadow-[0_0_40px_rgba(236,72,153,0.4)] hover:-translate-y-1 active:scale-[0.98]"
+                bg-gradient-to-r from-indigo-600 to-blue-700 text-white
+                hover:shadow-[0_0_40px_rgba(99,102,241,0.4)] hover:-translate-y-1 active:scale-[0.98]"
             >
               Start Building Now
               <ArrowRight className="w-5 h-5" />
@@ -276,7 +332,7 @@ export default function LandingPage() {
             <div className="w-8 h-8 rounded-xl flex items-center justify-center bg-white text-white">
               <span className="font-bold text-[10px] tracking-tighter"><Image src="/logo.png" alt="Logo" width={100} height={100} /></span>
             </div>
-            <span className="font-bold text-slate-800">CodPlay</span>
+            <span className="font-bold text-slate-800">CodePlay</span>
           </div>
           <p className="text-sm font-medium text-slate-400">
             Powered by modern AI Agents.

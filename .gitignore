@@ -13,3 +13,4 @@ packages/model/types.js
 .env.local
 .vercel
 .env*.local
+packages/agents/dist/

@@ -3,7 +3,12 @@ import { prisma } from "../model/db/client";
 import { PlanResponse } from "../model/types";
 import { Prisma } from "../model/db/generated/prisma/client";
 
-const SYSTEM_PROMPT = `You are an expert game architect. Given a set of clarified game requirements, produce a structured game plan.
+const SYSTEM_PROMPT = `You are an expert game architect and ruthless Project Manager. Given a set of clarified game requirements, produce a structured game plan for a SINGLE-FILE browser prototype.
+
+CRITICAL SCOPE CONSTRAINTS:
+1. NO META-SYSTEMS: Strip out all requests for "Tech Trees", "Inventories", "Reputation", or "Save Data". You are building an arcade prototype, not an RPG.
+2. LIMIT MECHANICS: Pick a MAXIMUM of 4 core mechanics. Discard the rest. 
+3. SIMPLE PHYSICS ONLY: Avoid complex math like gravity wells or procedural joints unless it is the single core hook.
 
 You must decide:
 1. Framework: "vanilla" (vanilla JavaScript) or "phaser" (Phaser 3).

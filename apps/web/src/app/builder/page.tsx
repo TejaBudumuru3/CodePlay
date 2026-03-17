@@ -50,7 +50,7 @@ function BuilderLayout() {
                 onClick={() => setActiveTab(tab.id)}
                 className={cn(
                   "w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 relative group",
-                  isActive ? "bg-gradient-to-br from-pink-100 to-purple-100 shadow-[0_4px_12px_rgba(236,72,153,0.15)]" : "hover:bg-slate-50 text-slate-400"
+                  isActive ? "bg-gradient-to-br from-indigo-100 to-blue-100 shadow-[0_4px_12px_rgba(99,102,241,0.15)]" : "hover:bg-slate-50 text-slate-400"
                 )}
                 title={tab.label}
               >

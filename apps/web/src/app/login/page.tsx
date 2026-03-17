@@ -47,7 +47,7 @@ function LoginContent() {
           {/* Logo */}
           <div className="flex flex-col items-center mb-8">
             <div className="w-18 h-18 rounded-2xl flex items-center justify-center mb-5
-              bg-gradient-to-br from-primary/15 to-accent/10 border border-primary/20 animate-glow-pulse"
+              bg-gradient-to-br from-indigo-500/15 to-blue-500/10 border border-indigo-500/20 animate-glow-pulse"
               style={{ width: '4.5rem', height: '4.5rem' }}>
               <Image src="/logo.png" alt="Logo" width={80} height={80} />
             </div>

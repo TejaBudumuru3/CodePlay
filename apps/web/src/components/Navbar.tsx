@@ -31,10 +31,10 @@ export default function Navbar({ onToggleSidebar, isSidebarOpen }: NavbarProps) 
           )}
         </button>
         <Link href="/" className="flex items-center gap-2.5 hover:opacity-80 transition-opacity">
-          <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-gradient-to-br from-pink-400 to-primary text-white shadow-md shadow-primary/20">
+          <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-gradient-to-br from-indigo-400 to-blue-600 text-white shadow-md shadow-indigo-500/20">
             <span className="font-bold text-sm tracking-tighter"><Image src="/logo.png" alt="Logo" width={24} height={24} /></span>
           </div>
-          <span className="font-bold tracking-tight text-slate-800 hidden sm:block">CodPlay</span>
+          <span className="font-bold tracking-tight text-slate-800 hidden sm:block">CodePlay</span>
         </Link>
       </div>
 

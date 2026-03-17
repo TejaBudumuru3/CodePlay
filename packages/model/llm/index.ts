@@ -46,7 +46,7 @@ export class LLM {
             const response = await RunWithRetry(async () => {
                 const res = await this.client.chat.completions.create({
                     model: model,
-                    temperature: params.mode === 'BUILD' ? 0.2 : 0.4,
+                    temperature: params.mode === 'BUILD' ? 0.2 : 0.1,
                     max_tokens: params.mode === 'BUILD' ? 16000 : 2048,
                     messages: [
                         { "role": "system", "content": params.system },
