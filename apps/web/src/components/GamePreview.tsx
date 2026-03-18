@@ -42,23 +42,57 @@ export default function GamePreview() {
       ? `<script>\n${jsFile.content}\n</script>`
       : "";
 
+    const viewportMeta = `<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">`;
+    
+    const baseStyles = `
+      <style>
+        body, html { 
+          margin: 0; 
+          padding: 0; 
+          width: 100%; 
+          height: 100%; 
+          overflow: hidden; 
+          background-color: #000;
+        }
+        canvas { 
+          display: block; 
+          max-width: 100%; 
+          max-height: 100%; 
+          object-fit: contain;
+          margin: 0 auto;
+        }
+      </style>
+    `;
+
     // Build Phaser CDN tag if needed
     const phaserCdn = isPhaser
       ? `<script src="https://cdn.jsdelivr.net/npm/phaser@3/dist/phaser.min.js"></script>\n`
       : "";
 
-    // Inject styles into <head>
+    // Mobile specific fixes for Phaser
+    const mobileFixes = isPhaser ? `
+      <script>
+        window.addEventListener('load', function() {
+          // Attempt to fix Phaser scale mode if it looks like it's not handled
+          if (window.phaserGame && window.phaserGame.scale) {
+            window.phaserGame.scale.setGameSize(window.innerWidth, window.innerHeight);
+          }
+        });
+      </script>
+    ` : "";
+
+    // Inject meta and base styles into <head>
     if (html.includes("</head>")) {
-      html = html.replace("</head>", `${styleBlock}\n${phaserCdn}</head>`);
+      html = html.replace("</head>", `${viewportMeta}\n${baseStyles}\n${phaserCdn}</head>`);
     } else {
-      html = `${styleBlock}\n${phaserCdn}\n${html}`;
+      html = `${viewportMeta}\n${baseStyles}\n${phaserCdn}\n${html}`;
     }
 
-    // Inject scripts before </body>
+    // Inject scripts and fixes before </body>
     if (html.includes("</body>")) {
-      html = html.replace("</body>", `${scriptBlock}\n</body>`);
+      html = html.replace("</body>", `${scriptBlock}\n${mobileFixes}</body>`);
     } else {
-      html = `${html}\n${scriptBlock}`;
+      html = `${html}\n${scriptBlock}\n${mobileFixes}`;
     }
 
     return html;

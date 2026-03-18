@@ -35,9 +35,9 @@ function BuilderLayout() {
 
       {/* ═══ Left Floating Sidebar (Desktop) ═══ */}
       <motion.div
-        initial={{ opacity: 0, x: -100 }}
-        animate={{ opacity: 1, x: 0 }}
-        transition={{ delay: 0, duration: 0.2 }}
+        initial={{ opacity: 0, x: -20 }}
+        whileInView={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.3, ease: [0.23, 1, 0.32, 1] }}
         className="hidden md:flex flex-col items-center w-[72px] bg-white/70 backdrop-blur-3xl border border-white/60 m-4 rounded-[24px] py-6 shadow-[0_8px_32px_rgba(0,0,0,0.06)] z-50 shrink-0">
         {/* Logo at top */}
         <Link href="/" className="w-11 h-11 rounded-lg bg-white shadow-inner flex items-center justify-center mb-8 shrink-0">
@@ -103,10 +103,14 @@ function BuilderLayout() {
           )}
 
           {activeTab === "preview" && (
-            <div className="w-full h-full animate-fade-in flex flex-col pt-4 pr-4 pb-4">
-              <div className="flex-1 bg-white/80 backdrop-blur-3xl rounded-[24px] border border-white/60 shadow-[0_8px_40px_rgba(0,0,0,0.05)] overflow-hidden">
+            <div className="w-full h-full animate-fade-in flex flex-col p-2 sm:pt-4 sm:pr-4 sm:pb-4">
+              <motion.div
+                initial={{ opacity: 0, x: 100 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0, duration: 0.5 }}
+                className="flex-1 bg-white/80 backdrop-blur-3xl rounded-[20px] sm:rounded-[24px] border border-white/60 shadow-[0_8px_40px_rgba(0,0,0,0.05)] overflow-hidden">
                 <GamePreview />
-              </div>
+              </motion.div>
             </div>
           )}
         </div>
@@ -121,7 +125,7 @@ function BuilderLayout() {
       </div>
 
       {/* Mobile Tab Bar */}
-      <div className="flex md:hidden absolute bottom-0 left-0 right-0 border-t border-white/60 bg-white/80 shrink-0 backdrop-blur-xl pb-safe z-50">
+      <div className="flex md:hidden fixed bottom-0 left-0 right-0 border-t border-white/60 bg-white/80 shrink-0 backdrop-blur-xl pb-safe z-50">
         {tabs.map(({ id, label, icon: Icon }) => (
           <button
             key={id}

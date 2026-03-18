@@ -131,12 +131,12 @@ export default function ChatInterface({
         <div className="w-11 h-11 pointer-events-none"></div>
 
         <motion.button
-          initial={{ opacity: 0, x: 100 }}
+          initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 0, duration: 0.2 }}
+          transition={{ duration: 0.3, ease: [0.23, 1, 0.32, 1] }}
           onClick={onToggleHistory}
           className={cn(
-            "w-11 h-11 rounded-[14px] sticky top-4 bg-white/80 backdrop-blur-md shadow-[0_2px_12px_rgba(0,0,0,0.04)] border border-white flex items-center justify-center text-slate-600 hover:text-slate-900 transition-all duration-300 pointer-events-auto hover:scale-105",
+            "w-11 h-11 rounded-[14px] bg-white/80 backdrop-blur-md shadow-[0_2px_12px_rgba(0,0,0,0.04)] border border-white flex items-center justify-center text-slate-600 hover:text-slate-900 transition-all duration-300 pointer-events-auto hover:scale-105",
             isHistoryExpanded && "bg-white ring-2 ring-primary/20"
           )}
           title="Toggle History"
@@ -150,9 +150,9 @@ export default function ChatInterface({
         <div className="w-full max-w-4xl space-y-8 flex flex-col">
           {messages.length === 0 && status === "IDLE" && (
             <motion.div
-              initial={{ opacity: 0, x: 100 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0, duration: 0.5 }}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, ease: [0.23, 1, 0.32, 1] }}
               className="flex flex-col items-center justify-center h-full text-center px-4 animate-slide-up py-12">
               <div className="w-24 h-24 rounded-full flex items-center justify-center mb-6
               bg-gradient-to-br from-indigo-200 via-blue-200 to-sky-100 shadow-xl border-4 border-white">
@@ -202,10 +202,10 @@ export default function ChatInterface({
 
       {/* Floating Input Area - Exactly matching reference pill style */}
       <motion.div
-        initial={{ opacity: 0, x: 100 }}
-        animate={{ opacity: 1, x: 0 }}
-        transition={{ delay: 0, duration: 0.5 }}
-        className="absolute bottom-20 md:bottom-10  left-0 right-0 px-4 sm:px-12 lg:px-32 z-20 flex justify-center">
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, ease: [0.23, 1, 0.32, 1] }}
+        className="absolute bottom-16 sm:bottom-10 left-0 right-0 px-4 sm:px-12 lg:px-32 z-20 flex justify-center">
         <form onSubmit={handleSubmit} className="relative w-full max-w-3xl group">
           {/* Animated Gradient Layer beneath input */}
           <div className="absolute -inset-1 bg-gradient-to-r from-indigo-200 via-blue-300 to-sky-200 rounded-[32px] blur-md opacity-30 group-hover:opacity-50 transition duration-500"></div>
