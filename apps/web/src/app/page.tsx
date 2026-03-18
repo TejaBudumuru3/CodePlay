@@ -44,7 +44,7 @@ export default function LandingPage() {
   const ctaHref = status === "authenticated" ? "/builder" : "/login";
 
   return (
-    <div className="min-h-screen bg-background text-foreground selection:bg-primary/20">
+    <div className="min-h-screen overflow-x-hidden bg-background text-foreground selection:bg-primary/20">
       {/* ═══ Navbar ═══ */}
       <header className="fixed top-0 left-0 right-0 z-50 glass-strong border-b-0 border-white/40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-18 flex items-center justify-between">
