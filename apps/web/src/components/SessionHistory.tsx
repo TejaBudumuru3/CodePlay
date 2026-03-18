@@ -87,7 +87,10 @@ export default function SessionHistory({ isOpen, onClose }: SessionHistoryProps)
              )}
           </div>
           <button
-            onClick={resetGame}
+            onClick={() => {
+              resetGame();
+              onClose?.();
+            }}
             className="flex items-center gap-1 text-xs font-bold text-primary hover:text-primary/80 transition-all duration-200
               px-3 py-1.5 rounded-full bg-primary/5 hover:bg-primary/10"
           >
@@ -115,7 +118,10 @@ export default function SessionHistory({ isOpen, onClose }: SessionHistoryProps)
               return (
                 <button
                   key={session.id}
-                  onClick={() => loadSession(session.id)}
+                  onClick={() => {
+                    loadSession(session.id);
+                    onClose?.();
+                  }}
                   className={cn(
                     "w-full text-left px-3 py-2.5 rounded-xl transition-all duration-200 group",
                     isActive

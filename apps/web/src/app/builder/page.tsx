@@ -9,6 +9,7 @@ import CodeViewer from "@/components/CodeViewer";
 import GamePreview from "@/components/GamePreview";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
+import { motion } from "framer-motion";
 
 type MobileTab = "chat" | "code" | "preview";
 
@@ -33,7 +34,11 @@ function BuilderLayout() {
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_0%_30%,rgba(255,240,245,0.8),transparent_50%),radial-gradient(circle_at_100%_80%,rgba(240,248,255,0.8),transparent_40%),radial-gradient(circle_at_50%_50%,rgba(255,245,238,0.5),transparent_60%)] pointer-events-none z-0"></div>
 
       {/* ═══ Left Floating Sidebar (Desktop) ═══ */}
-      <div className="hidden md:flex flex-col items-center w-[72px] bg-white/70 backdrop-blur-3xl border border-white/60 m-4 rounded-[24px] py-6 shadow-[0_8px_32px_rgba(0,0,0,0.06)] z-50 shrink-0">
+      <motion.div
+        initial={{ opacity: 0, x: -100 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ delay: 0, duration: 0.2 }}
+        className="hidden md:flex flex-col items-center w-[72px] bg-white/70 backdrop-blur-3xl border border-white/60 m-4 rounded-[24px] py-6 shadow-[0_8px_32px_rgba(0,0,0,0.06)] z-50 shrink-0">
         {/* Logo at top */}
         <Link href="/" className="w-11 h-11 rounded-lg bg-white shadow-inner flex items-center justify-center mb-8 shrink-0">
           <span className="font-bold text-lg tracking-tighter"><Image src="/logo.png" alt="Logo" width={80} height={80} /></span>
@@ -76,7 +81,7 @@ function BuilderLayout() {
             </button>
           )}
         </div>
-      </div>
+      </motion.div>
 
       {/* ═══ Main Content Area ═══ */}
       <div className="flex-1 flex flex-col overflow-hidden relative z-10 w-full">

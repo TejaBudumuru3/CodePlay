@@ -5,6 +5,7 @@ import { Send, Sparkles, X, History } from "lucide-react";
 import { useGameBuilder, type ChatMessage } from "@/context/GameBuilderContext";
 import ProgressIndicator from "./ProgressIndicator";
 import { cn } from "@/lib/utils";
+import { motion } from "framer-motion";
 
 export default function ChatInterface({
   onToggleHistory,
@@ -129,23 +130,30 @@ export default function ChatInterface({
       <div className="px-8 py-6 shrink-0 z-20 flex justify-between items-center absolute top-0 w-full pointer-events-none">
         <div className="w-11 h-11 pointer-events-none"></div>
 
-        <button
+        <motion.button
+          initial={{ opacity: 0, x: 100 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0, duration: 0.2 }}
           onClick={onToggleHistory}
           className={cn(
-            "w-11 h-11 rounded-[14px] bg-white/80 backdrop-blur-md shadow-[0_2px_12px_rgba(0,0,0,0.04)] border border-white flex items-center justify-center text-slate-600 hover:text-slate-900 transition-all duration-300 pointer-events-auto hover:scale-105",
+            "w-11 h-11 rounded-[14px] sticky top-4 bg-white/80 backdrop-blur-md shadow-[0_2px_12px_rgba(0,0,0,0.04)] border border-white flex items-center justify-center text-slate-600 hover:text-slate-900 transition-all duration-300 pointer-events-auto hover:scale-105",
             isHistoryExpanded && "bg-white ring-2 ring-primary/20"
           )}
           title="Toggle History"
         >
           <History className="w-[18px] h-[18px]" />
-        </button>
+        </motion.button>
       </div>
 
       {/* Messages area */}
       <div className="flex-1 overflow-y-auto px-4 w-full z-10 scroll-smooth pt-24 pb-48 flex flex-col items-center">
         <div className="w-full max-w-4xl space-y-8 flex flex-col">
           {messages.length === 0 && status === "IDLE" && (
-            <div className="flex flex-col items-center justify-center h-full text-center px-4 animate-slide-up py-12">
+            <motion.div
+              initial={{ opacity: 0, x: 100 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0, duration: 0.5 }}
+              className="flex flex-col items-center justify-center h-full text-center px-4 animate-slide-up py-12">
               <div className="w-24 h-24 rounded-full flex items-center justify-center mb-6
               bg-gradient-to-br from-indigo-200 via-blue-200 to-sky-100 shadow-xl border-4 border-white">
                 <Sparkles className="w-10 h-10 text-white drop-shadow-md" />
@@ -176,7 +184,7 @@ export default function ChatInterface({
                   </button>
                 ))}
               </div>
-            </div>
+            </motion.div>
           )}
 
           {messages.map((msg, i) => renderMessage(msg, i))}
@@ -193,7 +201,11 @@ export default function ChatInterface({
       </div>
 
       {/* Floating Input Area - Exactly matching reference pill style */}
-      <div className="absolute bottom-20 md:bottom-10  left-0 right-0 px-4 sm:px-12 lg:px-32 z-20 flex justify-center">
+      <motion.div
+        initial={{ opacity: 0, x: 100 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ delay: 0, duration: 0.5 }}
+        className="absolute bottom-20 md:bottom-10  left-0 right-0 px-4 sm:px-12 lg:px-32 z-20 flex justify-center">
         <form onSubmit={handleSubmit} className="relative w-full max-w-3xl group">
           {/* Animated Gradient Layer beneath input */}
           <div className="absolute -inset-1 bg-gradient-to-r from-indigo-200 via-blue-300 to-sky-200 rounded-[32px] blur-md opacity-30 group-hover:opacity-50 transition duration-500"></div>
@@ -232,7 +244,7 @@ export default function ChatInterface({
             </div>
           </div>
         </form>
-      </div>
+      </motion.div>
     </div>
   );
 }

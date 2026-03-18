@@ -23,6 +23,21 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import { useSession } from "next-auth/react";
+import { motion } from "framer-motion";
+
+const fadeInUp = {
+  initial: { opacity: 0, y: 30 },
+  animate: { opacity: 1, y: 0 },
+  transition: { duration: 0.8, ease: "easeOut" }
+};
+
+const staggerContainer = {
+  animate: {
+    transition: {
+      staggerChildren: 0.2
+    }
+  }
+};
 
 export default function LandingPage() {
   const { status } = useSession();
@@ -65,36 +80,71 @@ export default function LandingPage() {
       </header>
 
       {/* ═══ Hero Section ═══ */}
-      <section className="relative pt-40 pb-20 sm:pt-48 sm:pb-32 lg:pt-56 lg:pb-40 px-4 overflow-hidden mesh-gradient">
+      <section className="relative pt-20 pb-20 sm:pt-48 sm:pb-32 lg:pt-25 pointer-default lg:pb-20 px-4 overflow-hidden mesh-gradient">
         {/* Floating decorative elements */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute top-20 left-[10%] w-72 h-72 bg-indigo-400/10 rounded-full blur-3xl animate-float" />
-          <div className="absolute bottom-40 right-[15%] w-96 h-96 bg-blue-400/10 rounded-full blur-3xl animate-float-slow" />
-          <div className="absolute bottom-20 left-[40%] w-80 h-80 bg-violet-400/10 rounded-full blur-3xl animate-float-slow" />
+        <div className="absolute inset-0 overflow-hidden pointer-events-none ">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 2, delay: 0.6 }}
+            className="absolute top-20 left-[10%] w-72 h-72 bg-indigo-400/10 rounded-full blur-3xl animate-float"
+          />
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 2, delay: 0.5 }}
+            className="absolute bottom-40 right-[15%] w-96 h-96 bg-blue-400/10 rounded-full blur-3xl animate-float-slow"
+          />
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 2, delay: 1 }}
+            className="absolute bottom-20 left-[40%] w-80 h-80 bg-violet-400/10 rounded-full blur-3xl animate-float-slow"
+          />
         </div>
 
-        <div className="relative max-w-5xl mx-auto text-center z-10">
+        <motion.div
+          className="relative max-w-5xl mx-auto text-center z-10"
+          variants={staggerContainer}
+          initial="initial"
+          animate="animate"
+        >
           {/* Badge */}
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-primary/20 bg-primary/5 text-xs text-primary font-bold tracking-wide uppercase mb-8 shadow-sm animate-slide-up">
+          <motion.div
+            variants={fadeInUp}
+            viewport={{ once: true }}
+            transition={{ delay: 0, duration: 0.5 }}
+            className="inline-flex pointer-events-none items-center gap-2 px-4 py-2 rounded-full border border-primary/20 bg-primary/5 text-xs text-primary font-bold tracking-wide uppercase mb-8 shadow-sm"
+          >
             <Sparkles className="w-3.5 h-3.5" />
             AI-Powered Game Generation
-          </div>
+          </motion.div>
 
-          <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-[5.5rem] font-extrabold tracking-tight text-slate-900 leading-[1.05] mb-8 animate-slide-up"
-            style={{ animationDelay: '0.1s' }}>
+          <motion.h1
+            variants={fadeInUp}
+            viewport={{ once: true }}
+            transition={{ delay: 0, duration: 0.5 }}
+            className="text-5xl sm:text-6xl md:text-7xl pointer-events-none lg:text-[5.5rem] font-extrabold tracking-tight text-slate-900 leading-[1.05] mb-8"
+          >
             Imagine a game. <br className="hidden sm:block" />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-500 via-blue-500 to-sky-500">
               World's #1 Game Builder
             </span>
-          </h1>
+          </motion.h1>
 
-          <p className="text-lg sm:text-xl lg:text-2xl text-slate-600 max-w-3xl mx-auto mb-12 leading-relaxed font-medium animate-slide-up"
-            style={{ animationDelay: '0.2s' }}>
+          <motion.p
+            variants={fadeInUp}
+            viewport={{ once: true }}
+            transition={{ delay: 0, duration: 0.5 }}
+            className="text-lg pointer-events-none sm:text-xl lg:text-2xl text-slate-600 max-w-3xl mx-auto mb-12 leading-relaxed font-medium"
+          >
             Just describe your idea in plain english, and watch our multi-agent architecture write, compile, and render your game right in your browser.
-          </p>
+          </motion.p>
 
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-slide-up"
-            style={{ animationDelay: '0.3s' }}>
+          <motion.div
+            variants={fadeInUp}
+            className="flex flex-col sm:flex-row items-center justify-center gap-4"
+          >
             <Link
               href={ctaHref}
               className="inline-flex items-center gap-2.5 px-8 py-4 rounded-full font-bold text-base transition-all duration-300
@@ -106,17 +156,20 @@ export default function LandingPage() {
             </Link>
             <Link
               href="#how-it-works"
-              className="flex items-center gap-2.5 px-8 py-4 rounded-full font-bold text-base transition-all duration-300
+              className="flex items-center gap-2.5 px-8 py-4 rounded-full scroll-smooth font-bold text-base transition-all duration-300
                 bg-white border-2 border-slate-200 text-slate-700
                 hover:border-slate-300 hover:bg-slate-50 hover:-translate-y-1 active:scale-[0.98] shadow-sm"
             >
               See How It Works
             </Link>
-          </div>
+          </motion.div>
 
           {/* Social Proof Placeholder */}
-          <div className="mt-16 pt-10 border-t border-slate-200/60 animate-slide-up" style={{ animationDelay: '0.4s' }}>
-            <p className="text-sm font-semibold text-slate-400 uppercase tracking-widest mb-6">Trusted by creators worldwide</p>
+          <motion.div
+            variants={fadeInUp}
+            className="mt-16 pt-10 border-t border-slate-200/60"
+          >
+            <p className="text-sm pointer-events-none font-semibold text-slate-400 uppercase tracking-widest mb-6">Trusted by creators worldwide</p>
             <div className="flex justify-center gap-8 opacity-50 grayscale hover:grayscale-0 transition-all duration-500">
               {/* Mock logos */}
               <Globe className="w-8 h-8 text-slate-800" />
@@ -124,14 +177,20 @@ export default function LandingPage() {
               <Gamepad2 className="w-8 h-8 text-slate-800" />
               <Zap className="w-8 h-8 text-slate-800" />
             </div>
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
       </section>
 
       {/* ═══ Feature Spotlight (Product Presentation) ═══ */}
       <section id="features" className="py-24 sm:py-32 bg-white relative">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-3xl mx-auto mb-20">
+        <motion.div
+          className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"
+          initial={{ opacity: 0, y: 50 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ margin: "-100px" }}
+          transition={{ duration: 0.8 }}
+        >
+          <div className="text-center pointer-events-none max-w-3xl mx-auto mb-20">
             <h2 className="text-primary font-bold tracking-wide uppercase text-sm mb-3">Limitless Possibilities</h2>
             <h3 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-slate-900 mb-6">A Complete Studio, <br />In Your Browser</h3>
             <p className="text-lg text-slate-600">No downloads. No complicated UI. Just pure creativity backed by cutting-edge artificial intelligence.</p>
@@ -140,7 +199,10 @@ export default function LandingPage() {
           <div className="grid lg:grid-cols-2 gap-16 items-center">
             <div className="order-2 lg:order-1 relative">
               <div className="absolute inset-0 bg-gradient-to-tr from-sky-200 to-indigo-200 blur-3xl opacity-50 rounded-full"></div>
-              <div className="relative bg-slate-50 border border-slate-200 rounded-3xl p-2 shadow-2xl rotate-0 sm:rotate-[-2deg] hover:rotate-0 transition-transform duration-500 scale-[0.85] sm:scale-100 origin-center">
+              <motion.div
+                className="relative bg-slate-50 border border-slate-200 rounded-3xl p-2 shadow-2xl rotate-0 sm:rotate-[-2deg] hover:rotate-0 transition-transform duration-500 scale-[0.85] sm:scale-100 origin-center"
+                whileHover={{ rotate: 0, scale: 1.02 }}
+              >
                 <div className="bg-white rounded-2xl overflow-hidden border border-slate-100 shadow-inner aspect-[4/3] flex flex-col">
                   <div className="h-10 border-b border-slate-100 flex items-center px-4 gap-2 bg-slate-50/50">
                     <div className="w-3 h-3 rounded-full bg-red-400"></div>
@@ -158,42 +220,35 @@ export default function LandingPage() {
                     {'}'}
                   </div>
                 </div>
-              </div>
+              </motion.div>
             </div>
 
             <div className="order-1 lg:order-2 space-y-10">
-              <div className="flex gap-4">
-                <div className="w-12 h-12 rounded-xl bg-indigo-100 text-indigo-600 flex items-center justify-center shrink-0 shadow-inner">
-                  <Wrench className="w-6 h-6" />
-                </div>
-                <div>
-                  <h4 className="text-xl font-bold text-slate-900 mb-2">Production-Ready Code</h4>
-                  <p className="text-slate-600 leading-relaxed">Our models don't just prototype; they output clean, maintainable HTML, CSS, and JS using modern frameworks like Phaser 3.</p>
-                </div>
-              </div>
-
-              <div className="flex gap-4">
-                <div className="w-12 h-12 rounded-xl bg-purple-100 text-purple-600 flex items-center justify-center shrink-0 shadow-inner">
-                  <Zap className="w-6 h-6" />
-                </div>
-                <div>
-                  <h4 className="text-xl font-bold text-slate-900 mb-2">Instant Rendering</h4>
-                  <p className="text-slate-600 leading-relaxed">Preview your game side-by-side with your code instantly. No compilers or local environment setup required.</p>
-                </div>
-              </div>
-
-              <div className="flex gap-4">
-                <div className="w-12 h-12 rounded-xl bg-sky-100 text-sky-600 flex items-center justify-center shrink-0 shadow-inner">
-                  <ShieldCheck className="w-6 h-6" />
-                </div>
-                <div>
-                  <h4 className="text-xl font-bold text-slate-900 mb-2">Enterprise-Grade AI</h4>
-                  <p className="text-slate-600 leading-relaxed">Powered by the latest LLMs (Gemini Pro, Claude 3.5 Sonnet) specifically fine-tuned for software architecture and logic.</p>
-                </div>
-              </div>
+              {[
+                { icon: Wrench, title: "Production-Ready Code", desc: "Our models don't just prototype; they output clean, maintainable HTML, CSS, and JS using modern frameworks like Phaser 3.", color: "indigo" },
+                { icon: Zap, title: "Instant Rendering", desc: "Preview your game side-by-side with your code instantly. No compilers or local environment setup required.", color: "purple" },
+                { icon: ShieldCheck, title: "Enterprise-Grade AI", desc: "Powered by the latest LLMs (Gemini Pro, Claude 3.5 Sonnet) specifically fine-tuned for software architecture and logic.", color: "sky" }
+              ].map((feature, i) => (
+                <motion.div
+                  key={feature.title}
+                  className="flex gap-4 border-l border-slate-200 rounded-2xl shadow-xl p-4 hover:border-slate-300 hover:bg-slate-50 hover:-translate-y-1 active:scale-[0.98] delay-100 duration-500"
+                  initial={{ opacity: 0, x: 30 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  viewport={{}}
+                  transition={{ delay: i * 0.2, duration: 0.5 }}
+                >
+                  <div className={`w-12 h-12 rounded-xl bg-${feature.color}-100 text-${feature.color}-600 flex items-center justify-center shrink-0 shadow-inner`}>
+                    <feature.icon className="w-6 h-6" />
+                  </div>
+                  <div className="pointer-events-none ">
+                    <h4 className="text-xl font-bold text-slate-900 mb-2">{feature.title}</h4>
+                    <p className="text-slate-600 leading-relaxed">{feature.desc}</p>
+                  </div>
+                </motion.div>
+              ))}
             </div>
           </div>
-        </div>
+        </motion.div>
       </section>
 
       <section id="how-it-works" className="py-24 sm:py-32 px-4 bg-white border-y border-slate-200 relative overflow-hidden">
@@ -203,15 +258,27 @@ export default function LandingPage() {
         <div className="absolute bottom-0 right-[20%] w-[300px] h-[300px] bg-purple-200/30 rounded-full blur-[100px] pointer-events-none" />
 
         <div className="max-w-7xl mx-auto relative z-10">
-          <div className="text-center mb-16 relative">
+          <motion.div
+            className="text-center mb-16 relative"
+            initial={{ opacity: 0, scale: 0.95 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            viewport={{}}
+            transition={{ duration: 0.8 }}
+          >
             <h2 className="text-indigo-600 font-bold tracking-widest uppercase text-xs mb-3">Our Technology</h2>
             <h3 className="text-4xl sm:text-5xl lg:text-6xl font-black text-slate-900 mb-6 tracking-tight">A Multi-Agent Symphony</h3>
             <p className="text-slate-500 text-lg max-w-2xl mx-auto font-medium leading-relaxed">
               Behind the scenes, specialized AI agents act as your personal game studio, passing context seamlessly from concept to deployment.
             </p>
-          </div>
+          </motion.div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 relative max-w-6xl mx-auto">
+          <motion.div
+            className="grid grid-cols-1 md:grid-cols-3 gap-8 relative max-w-6xl mx-auto"
+            variants={staggerContainer}
+            initial="initial"
+            whileInView="animate"
+            viewport={{ margin: "-100px" }}
+          >
             {[
               {
                 icon: Layers,
@@ -259,7 +326,11 @@ export default function LandingPage() {
                 ring: "group-hover:ring-emerald-500/30",
               },
             ].map(({ icon: Icon, name, role, traits, accent, iconColor, action, actionGradient, ring }) => (
-              <div key={name} className={`group relative flex flex-col pt-10 pb-8 px-8 rounded-[40px] bg-white/10 backdrop-blur-[80px] border border-white/50 shadow-xl hover:-translate-y-3 transition-all duration-700 overflow-hidden items-center ring-0 ${ring}`}>
+              <motion.div
+                key={name}
+                variants={fadeInUp}
+                className={`group relative flex flex-col pt-10 pb-8 px-8 rounded-[40px] bg-white/10 backdrop-blur-[80px] border border-white/50 shadow-xl hover:-translate-y-3 transition-all duration-700 overflow-hidden items-center ring-0 ${ring}`}
+              >
                 {/* Internal Glow Bleed - Vibrant & Designer Grade */}
                 <div className={`absolute bottom-0 left-0 right-0 h-2/3 bg-gradient-to-t ${accent} to-transparent blur-[80px] opacity-30 group-hover:opacity-70 transition-opacity duration-700`} />
 
@@ -290,20 +361,25 @@ export default function LandingPage() {
                     {action}
                   </span>
                 </div>
-              </div>
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
         </div>
       </section>
 
-      {/* ═══ CTA Section ═══ */}
       <section className="py-28 sm:py-36 px-4 relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900"></div>
         {/* Decorative lights */}
         <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/20 rounded-full blur-[100px]"></div>
         <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-accent/20 rounded-full blur-[100px]"></div>
 
-        <div className="relative z-10 max-w-4xl mx-auto text-center">
+        <motion.div
+          className="relative z-10 max-w-4xl mx-auto text-center"
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{}}
+          transition={{ duration: 0.8 }}
+        >
           <h2 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-white mb-6">
             Stop dreaming. Start building.
           </h2>
@@ -322,11 +398,17 @@ export default function LandingPage() {
             </Link>
           </div>
           <p className="mt-8 text-sm text-slate-400 font-medium">No credit card required. Free tier includes Gemini 3.1 Pro access.</p>
-        </div>
+        </motion.div>
       </section>
 
       {/* ═══ Footer ═══ */}
-      <footer className="border-t border-border bg-white py-12 px-4">
+      <motion.footer
+        className="border-t border-border bg-white py-12 px-4"
+        initial={{ opacity: 0 }}
+        whileInView={{ opacity: 1 }}
+        viewport={{}}
+        transition={{ duration: 1 }}
+      >
         <div className="max-w-7xl mx-auto flex flex-col items-center justify-between gap-6">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-xl flex items-center justify-center bg-white text-white">
@@ -338,7 +420,7 @@ export default function LandingPage() {
             Powered by modern AI Agents.
           </p>
         </div>
-      </footer>
+      </motion.footer>
     </div>
   );
 }

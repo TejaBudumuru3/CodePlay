@@ -21,11 +21,11 @@ export async function POST(req: NextRequest) {
     // New game flow — create session and start
     if (!sessionId && prompt) {
       // Guest mode: delete previous sessions to enforce single-slot
-      if (session.user.email === "guestuser@gmail.com") {
-        await prisma.session.deleteMany({
-          where: { userId },
-        });
-      }
+      // if (session.user.email === "guestuser@gmail.com") {
+      //   await prisma.session.deleteMany({
+      //     where: { userId },
+      //   });
+      // }
 
       const newSession = await prisma.session.create({
         data: {

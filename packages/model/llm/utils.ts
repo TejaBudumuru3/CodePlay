@@ -16,11 +16,11 @@ export class LLMError extends Error {
                 this.retryable = false;
                 this.name = "LlmError - Rate Limit Exceeded";
             } else {
-                this.retryable = false;
+                this.retryable = true;
                 this.name = "LlmError - Too many Requests";
             }
         } else {
-            this.retryable = false;
+            this.retryable = true;
             this.name = "LlmError - Unknown Error";
         }
     }
@@ -47,7 +47,7 @@ export async function RunWithRetry(
                     data: {
                         status: "FAILED",
                         retries: attempt,
-                        error: `LLM - error] Max retries reached: ${err.message}`
+                        error: `[LLM - error] Non-retryable error: ${err.message}`
                     }
                 })
                 throw err;
@@ -62,7 +62,7 @@ export async function RunWithRetry(
                         data: {
                             status: "FAILED",
                             retries: attempt,
-                            error: `LLM - error] Max retries reached: ${err.message}`
+                            error: `[LLM - error] Max retries reached: ${err.message}`
                         }
                     })
                     throw err;
@@ -72,7 +72,7 @@ export async function RunWithRetry(
             }
 
         }
-        throw new Error("Unreachable");
     }
+    throw new Error("Unreachable");
 
 }
