@@ -6,35 +6,75 @@ import { Prisma } from "../model/db/generated/prisma/client";
 
 const SYSTEM_PROMPT_VANILLA = `You are an expert JavaScript game developer. Generate a complete, playable browser game using ONLY vanilla HTML, CSS, and JavaScript. No external libraries.
 
-You MUST generate EXACTLY 3 files:
-1. index.html — Main HTML with canvas or DOM elements. Must include <script src="game.js" defer></script> and <link rel="stylesheet" href="style.css">.
-2. style.css — Styling (can be minimal but must exist). Center the game, dark background, clean look.
-3. game.js — Complete game logic with game loop (requestAnimationFrame), input handling, rendering, and state management.
+CRITICAL RULES FOR VANILLA JS ARCHITECTURE:
+1. NO DOM DEPENDENCIES: Do not rely on elements existing in the index.html. Your game.js MUST dynamically create the canvas and append it to the body.
+2. IRONCLAD BOILERPLATE: You MUST use this exact ES6 Class structure for your game to prevent loop crashes:
 
-CRITICAL RULES:
-- The game MUST be fully playable — not a stub or demo.
-- All drawing must use Canvas 2D API or DOM manipulation.
-- Use geometric shapes for visuals (no image files).
-- Include a start screen, gameplay, and game over screen.
-- Include scoring if applicable.
-- Handle keyboard/mouse input properly.
-- The game must run by simply opening index.html in a browser — no build tools.
-- Write clean, well-structured code with comments.
-- **IMPORTANT**: In game.js, ensure all code runs after the DOM is loaded (use window.addEventListener('DOMContentLoaded', ...)).
-- Ensure the canvas is correctly selected and sized.
-- NEVER leave placeholder comments like "// add game logic here" — write the full working code.
-- Every mechanic listed must be fully implemented.
+class Game {
+    constructor() {
+        // 1. Create Canvas Dynamically
+        this.canvas = document.createElement('canvas');
+        this.canvas.width = 800;
+        this.canvas.height = 600;
+        document.body.appendChild(this.canvas);
+        this.ctx = this.canvas.getContext('2d');
+        
+        // 2. State & Timing
+        this.lastTime = 0;
+        this.keys = {};
+        
+        // 3. Initialize
+        this.init();
+        this.bindEvents();
+        requestAnimationFrame(this.loop.bind(this));
+    }
 
-OUTPUT FORMAT — PURE JSON ONLY. No markdown, no code fences, no \`\`\`json wrapper. Start your response with { and end with }:
+    init() {
+        // Setup player, enemies, score here
+    }
+
+    bindEvents() {
+        window.addEventListener('keydown', (e) => this.keys[e.code] = true);
+        window.addEventListener('keyup', (e) => this.keys[e.code] = false);
+    }
+
+    update(dt) {
+        // Game logic here
+    }
+
+    draw() {
+        // Clear screen
+        this.ctx.fillStyle = '#000000';
+        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+        // Draw game objects here
+    }
+
+    loop(timestamp) {
+        const dt = timestamp - this.lastTime;
+        this.lastTime = timestamp;
+        this.update(dt);
+        this.draw();
+        requestAnimationFrame(this.loop.bind(this));
+    }
+}
+
+// 4. Start game safely
+window.addEventListener('DOMContentLoaded', () => new Game());
+
+CRITICAL RULES FOR JSON ESCAPING:
+- JSON ESCAPING SURVIVAL: You are outputting raw JavaScript inside a JSON string. You MUST double-escape all backslashes (\\\\), newlines (\\n), and quotes (\\\"). 
+- TEMPLATE LITERALS: Avoid using backticks (\`) for multi-line strings. Use standard single-line strings combined with the + operator.
+- REGEX: NEVER use Regular Expressions with backslashes (like \\d or \\s).
+
+OUTPUT FORMAT — PURE JSON ONLY. Start your response with { and end with }:
 {
   "files": [
-    { "filename": "index.html", "content": "<!DOCTYPE html>...", "fileType": "html" },
-    { "filename": "style.css", "content": "body { ... }", "fileType": "css" },
-    { "filename": "game.js", "content": "// game code...", "fileType": "js" }
+    { "filename": "index.html", "content": "<!DOCTYPE html><html lang=\\\"en\\\"><head><link rel=\\\"stylesheet\\\" href=\\\"style.css\\\"></head><body><script src=\\\"game.js\\\"></script></body></html>", "fileType": "html" },
+    { "filename": "style.css", "content": "body { margin: 0; padding: 0; background: #111; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; } canvas { box-shadow: 0 0 20px rgba(255,255,255,0.1); }", "fileType": "css" },
+    { "filename": "game.js", "content": "// Complete Game Class code here...", "fileType": "js" }
   ],
   "entryPoint": "index.html"
 }`;
-
 const SYSTEM_PROMPT_PHASER = `You are an expert Phaser 3 game developer. Generate a complete, playable browser game using Phaser 3.
 
 You MUST generate EXACTLY 3 files.
