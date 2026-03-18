@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Send, Sparkles, X, History } from "lucide-react";
+import { Send, Sparkles, X, History, LogOut, User as UserIcon } from "lucide-react";
 import { useGameBuilder, type ChatMessage } from "@/context/GameBuilderContext";
 import ProgressIndicator from "./ProgressIndicator";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
+import { signOut, useSession } from "next-auth/react";
 
 export default function ChatInterface({
   onToggleHistory,
@@ -14,6 +15,7 @@ export default function ChatInterface({
   onToggleHistory?: () => void;
   isHistoryExpanded?: boolean;
 }) {
+  const { data: session } = useSession();
   const {
     status,
     messages,
@@ -128,7 +130,29 @@ export default function ChatInterface({
     <div className="flex flex-col h-full m-0 relative overflow-hidden bg-transparent w-full">
       {/* Absolute Floating Header Buttons */}
       <div className="px-8 py-6 shrink-0 z-20 flex justify-between items-center absolute top-0 w-full pointer-events-none">
-        <div className="w-11 h-11 pointer-events-none"></div>
+        <motion.div 
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.3, ease: [0.23, 1, 0.32, 1] }}
+          className="flex md:hidden items-center gap-2 pointer-events-auto"
+        >
+          <div className="w-10 h-10 rounded-full bg-white border-2 border-white shadow-sm flex items-center justify-center overflow-hidden">
+             {session?.user?.image ? (
+               <img src={session.user.image} alt="User" className="w-full h-full object-cover" />
+             ) : (
+               <UserIcon className="w-4 h-4 text-slate-500" />
+             )}
+          </div>
+          <button 
+            onClick={() => signOut({ callbackUrl: "/" })}
+            className="w-10 h-10 rounded-full bg-white/80 backdrop-blur-md shadow-sm border border-white flex items-center justify-center text-slate-500 hover:text-red-500 transition-all duration-300"
+            title="Log out"
+          >
+            <LogOut className="w-4 h-4" />
+          </button>
+        </motion.div>
+        
+        <div className="hidden md:block w-11 h-11 pointer-events-none"></div>
 
         <motion.button
           initial={{ opacity: 0, x: 20 }}
