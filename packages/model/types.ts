@@ -1,8 +1,26 @@
+
+export interface MCQOption {
+    key: 'A' | 'B' | 'C' | 'D';
+    text: string;
+}
+
+export interface MCQQuestion {
+    id: number;
+    question: string;
+    options: MCQOption[];
+}
+
 export interface ClarificationResponse {
-    questions: string[];
+    questions: MCQQuestion[];
     isSufficient: boolean;
     summary: string;
     confidence: number;
+}
+
+export interface clarificationAnswer {
+    questionId: number;
+    selectedKey: 'A' | 'B' | 'C' | 'D';
+    customText?: string;
 }
 
 export interface PlanResponse {
@@ -16,12 +34,13 @@ export interface PlanResponse {
     gameLoopDescription: string;
 }
 
-export interface CodeFile {
-    filename: string;
-    content: string;
-    type: string;
-}
 export interface BuildResponse {
-    files: CodeFile[];
-    entryPoint: string;
+    code: string;
+    title: string;
+}
+
+export interface ReviewerResponse {
+    passed: boolean;
+    remarks: string | null;
+    issues: { severity: string; code: string; description: string; brokenCode: string; fix: string }[];
 }

@@ -1,5 +1,5 @@
 import OpenAI from 'openai';
-import { RunWithRetry, LLMError } from './utils';
+import { RunWithRetry } from './utils';
 import { prisma } from "../db/client";
 import * as crypto from 'crypto';
 
@@ -13,6 +13,7 @@ interface prepareParams {
     mode: 'PLAN' | 'BUILD';
     json?: boolean;
     sessionId: string;
+    stream?: boolean;
 }
 export class LLM {
     private client: OpenAI;
@@ -25,12 +26,18 @@ export class LLM {
 
     }
 
-    async hash(txt: string) {
+    hash(txt: string) {
         return String(crypto.createHash('sha256').update(txt).digest('hex'));
     }
-    async generate<T>(params: prepareParams): Promise<T> {
+    async generate<T>(params: prepareParams): Promise<T | AsyncGenerator<string, void, unknown>> {
         const model = params.mode === 'PLAN' ? MODEL : CODEMODEL
-        const hashPrompt = await this.hash(params.system + params.prompt);
+        const hashPrompt = this.hash(params.system + params.prompt);
+        const tokens = params.mode === 'BUILD' ? 16000 : 4096;
+        const temp = params.mode === 'BUILD' ? 0.2 : 0.1;
+        const messages = [
+            { "role": "system" as const, "content": params.system },
+            { "role": "user" as const, "content": params.prompt },
+        ];
 
         try {
             const cached = await prisma.llmCache.findUnique({
@@ -40,41 +47,119 @@ export class LLM {
             })
 
             if (cached) {
-                return cached.response as T;
-            }
+                try {
 
-            const response = await RunWithRetry(async () => {
-                const res = await this.client.chat.completions.create({
-                    model: model,
-                    temperature: params.mode === 'BUILD' ? 0.2 : 0.1,
-                    max_tokens: params.mode === 'BUILD' ? 16000 : 4096,
-                    messages: [
-                        { "role": "system", "content": params.system },
-                        { "role": "user", "content": params.prompt },
-                    ],
-                    response_format: params.json ? { type: "json_object" } : undefined
-                })
-                const content = res.choices[0].message.content;
-                if (!content) {
+                    if (params.stream) {
+                        return (async function* () {
+                            yield cached.response as string;
+                        })() as AsyncGenerator<string, void, unknown>
+                    }
+                    else {
+                        return (params.json
+                            ? JSON.parse(cached.response as string)
+                            : cached.response
+                        ) as T;
+                    }
+                } catch (err) {
+                    console.error("[Stream - error] Error in returning cached response: ", err);
                     await prisma.session.update({
                         where: { id: params.sessionId },
-                        data: { status: 'FAILED', error: "No content in LLM response" }
-                    })
-                    throw new Error("No content in LLM response");
+                        data: {
+                            status: 'FAILED',
+                            error: err instanceof Error ? err.message : "Stream interrupted"
+                        }
+                    });
+                    throw err;
                 }
-                return JSON.parse(content) as T;
+            }
+
+            return await RunWithRetry(async () => {
+                if (params.stream) {
+                    const res = await this.client.chat.completions.create({
+                        model: model,
+                        temperature: temp,
+                        max_tokens: tokens,
+                        messages: messages,
+                        stream: true
+                    })
+                    let fullRes = "";
+                    return (async function* () {
+                        try {
+                            for await (const chunk of res as any) {
+                                const text = chunk.choices[0]?.delta?.content || "";
+                                fullRes += text;
+                                yield text;
+                            }
+                            if (!fullRes) {
+                                throw new Error("No content in LLM stream");
+                            }
+
+                            await prisma.llmCache.create({
+                                data: {
+                                    promptHash: hashPrompt,
+                                    response: fullRes,
+                                    model: model
+                                }
+                            })
+
+                            if (params.sessionId && params.mode === 'BUILD') {
+                                await prisma.session.update({
+                                    where: { id: params.sessionId },
+                                    data: {
+                                        status: 'REVIEW',
+                                        code: { code: fullRes }
+                                    }
+                                })
+                            }
+                        } catch (err) {
+                            console.error("[Stream - error] Error in streaming response: ", err);
+                            await prisma.session.update({
+                                where: { id: params.sessionId },
+                                data: {
+                                    status: 'FAILED',
+                                    error: err instanceof Error ? err.message : "Stream interrupted"
+                                }
+                            });
+                            throw err;
+                        }
+                    })();
+                }
+                else {
+                    const res = await this.client.chat.completions.create({
+                        model: model,
+                        temperature: temp,
+                        max_tokens: tokens,
+                        messages: messages,
+                        response_format: (params.json) ? { type: "json_object" } : undefined,
+                        stream: false
+                    })
+                    const content = res.choices[0]?.message?.content;
+
+                    if (!content) {
+                        await prisma.session.update({
+                            where: { id: params.sessionId },
+                            data: { status: 'FAILED', error: "No content in LLM response" }
+                        })
+                        throw new Error("No content in LLM response");
+                    }
+
+                    const parsedResponse = params.json ? JSON.parse(content) : content;
+
+
+                    await prisma.llmCache.create({
+                        data: {
+                            promptHash: hashPrompt,
+                            response: content,
+                            model: model
+                        }
+                    })
+
+                    return parsedResponse as T;
+
+                }
             }, params.sessionId)
 
-            if (response) {
-                await prisma.llmCache.create({
-                    data: {
-                        promptHash: hashPrompt,
-                        response: response,
-                        model: model
-                    }
-                })
-            }
-            return response
+
         }
         catch (err) {
             await prisma.session.update({

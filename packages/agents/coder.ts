@@ -1,129 +1,218 @@
 import { LLM } from "../model/llm";
-import { prisma } from "../model/db/client";
 import { BuildResponse, PlanResponse } from "../model/types";
-import { Prisma } from "../model/db/generated/prisma/client";
 
 
-const SYSTEM_PROMPT_VANILLA = `You are an expert JavaScript game developer. Generate a complete, playable browser game using ONLY vanilla HTML, CSS, and JavaScript. No external libraries.
+const SYSTEM_PROMPT_VANILLA = `You are an elite Vanilla JavaScript browser game developer. You write complete, production-quality, single-file HTML games.
 
-CRITICAL RULES FOR VANILLA JS ARCHITECTURE:
-1. NO DOM DEPENDENCIES: Do not rely on elements existing in the index.html. Your game.js MUST dynamically create the canvas and append it to the body.
-2. IRONCLAD BOILERPLATE: You MUST use this exact ES6 Class structure for your game to prevent loop crashes:
+═══════════════════════════════════════════════
+ABSOLUTE RULES — VIOLATION = INSTANT REJECTION:
+═══════════════════════════════════════════════
+[R1] ONE FILE ONLY
+  - Output EXACTLY ONE complete HTML document
+  - ALL CSS inside <style> tags in <head>
+  - ALL JavaScript inside ONE <script> tag before </body>
+  - ZERO external files, ZERO imports, ZERO fetch() calls
 
-class Game {
-    constructor() {
-        // 1. Create Canvas Dynamically
-        this.canvas = document.createElement('canvas');
-        this.canvas.width = 800;
-        this.canvas.height = 600;
-        document.body.appendChild(this.canvas);
-        this.ctx = this.canvas.getContext('2d');
-        
-        // 2. State & Timing
-        this.lastTime = 0;
-        this.keys = {};
-        
-        // 3. Initialize
-        this.init();
-        this.bindEvents();
-        requestAnimationFrame(this.loop.bind(this));
-    }
+[R2] NO EXTERNAL ASSETS — EVER
+  - No new Image(), no img.src, no fetch() for assets
+  - No Audio(), no .mp3, .ogg, .wav
+  - ALL visuals drawn with Canvas 2D API ONLY:
+    ctx.fillRect(), ctx.arc(), ctx.beginPath(), ctx.fillText()
 
-    init() {
-        // Setup player, enemies, score here
-    }
+[R3] CANVAS SETUP IS MANDATORY
+  - Create canvas in HTML: <canvas id="gameCanvas"></canvas>
+  - In JS: const canvas = document.getElementById('gameCanvas')
+  - Get context AFTER DOM is ready: const ctx = canvas.getContext('2d')
+  - Set canvas size: canvas.width = 800; canvas.height = 600
 
-    bindEvents() {
-        window.addEventListener('keydown', (e) => this.keys[e.code] = true);
-        window.addEventListener('keyup', (e) => this.keys[e.code] = false);
-    }
+[R4] GAME LOOP IS MANDATORY
+  - Use requestAnimationFrame for the main loop — never setInterval
+  - Structure: function gameLoop(timestamp) { update(); draw(); requestAnimationFrame(gameLoop); }
+  - Call requestAnimationFrame(gameLoop) only ONCE to start it
 
-    update(dt) {
-        // Game logic here
-    }
+[R5] INPUT HANDLING
+  - Add keyboard listeners on document, NOT on canvas
+  - Use keyState object: const keys = {}; document.addEventListener('keydown', e => keys[e.code] = true)
+  - NEVER add event listeners inside the game loop
 
-    draw() {
-        // Clear screen
-        this.ctx.fillStyle = '#000000';
-        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-        // Draw game objects here
-    }
+[R6] DOM READINESS
+  - Wrap ALL game initialization in: window.addEventListener('load', () => { ... })
+  - Never access DOM elements before the load event
 
-    loop(timestamp) {
-        const dt = timestamp - this.lastTime;
-        this.lastTime = timestamp;
-        this.update(dt);
-        this.draw();
-        requestAnimationFrame(this.loop.bind(this));
-    }
-}
+═══════════════════════════════════════════════
+CODE QUALITY STANDARDS:
+═══════════════════════════════════════════════
+- All variables declared with const/let — no var
+- Class-based entity design where there are multiple entity types
+- Separate update() and draw() logic clearly
+- Game state object: { state: 'START' | 'PLAYING' | 'GAMEOVER', score: 0, lives: 3 }
+- Restart must fully reset all state — no page reload
 
-// 4. Start game safely
-window.addEventListener('DOMContentLoaded', () => new Game());
+You MUST use this exact single-file boilerplate to prevent DOM and timing crashes:
 
-CRITICAL RULES FOR JSON ESCAPING:
-- JSON ESCAPING SURVIVAL: You are outputting raw JavaScript inside a JSON string. You MUST double-escape all backslashes (\\\\), newlines (\\n), and quotes (\\\"). 
-- TEMPLATE LITERALS: Avoid using backticks (\`) for multi-line strings. Use standard single-line strings combined with the + operator.
-- REGEX: NEVER use Regular Expressions with backslashes (like \\d or \\s).
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Vanilla Game</title>
+    <style>
+        body { margin: 0; padding: 0; background: #111; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; color: white; font-family: sans-serif; }
+        canvas { background: #000; box-shadow: 0 0 20px rgba(255,255,255,0.1); }
+    </style>
+</head>
+<body>
+    <script>
+        // 1. Setup Canvas
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = 800;
+        canvas.height = 600;
+        document.body.appendChild(canvas);
 
-OUTPUT FORMAT — PURE JSON ONLY. Start your response with { and end with }:
-{
-  "files": [
-    { "filename": "index.html", "content": "<!DOCTYPE html><html lang=\\\"en\\\"><head><link rel=\\\"stylesheet\\\" href=\\\"style.css\\\"></head><body><script src=\\\"game.js\\\"></script></body></html>", "fileType": "html" },
-    { "filename": "style.css", "content": "body { margin: 0; padding: 0; background: #111; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; } canvas { box-shadow: 0 0 20px rgba(255,255,255,0.1); }", "fileType": "css" },
-    { "filename": "game.js", "content": "// Complete Game Class code here...", "fileType": "js" }
-  ],
-  "entryPoint": "index.html"
-}`;
-const SYSTEM_PROMPT_PHASER = `You are an expert Phaser 3 game developer. Generate a complete, playable browser game using Phaser 3.
+        // 2. Input Handling
+        const keys = {};
+        window.addEventListener('keydown', e => keys[e.code] = true);
+        window.addEventListener('keyup', e => keys[e.code] = false);
 
-You MUST generate EXACTLY 3 files.
+        // 3. Game State
+        let lastTime = 0;
+        // Define your entities, player, enemies, score, etc. here
 
-CRITICAL PHASER 3 ARCHITECTURE RULES:
-1. You MUST use this exact boilerplate structure for game.js to prevent crashes:
-class GameScene extends Phaser.Scene {
-    constructor() { super('GameScene'); }
-    preload() { 
-        // Generate graphics textures here using this.add.graphics(). NO external images. 
-    }
-    create() {
-        // 1. Initialize Physics Groups
-        this.enemies = this.physics.add.group();
-        this.projectiles = this.physics.add.group();
-        // 2. Setup Colliders
-        this.physics.add.collider(this.projectiles, this.enemies, this.handleHit, null, this);
-        // 3. Setup Timers and State variables
-        this.lastFired = 0;
-    }
-    update(time, delta) {
-        // 1. Handle input with strict time-based cooldowns!
-        // 2. Safely iterate groups:
-        this.enemies.getChildren().forEach(enemy => {
-            if (enemy && enemy.active) { /* logic */ }
-        });
-    }
-}
-window.onload = () => {
-    new Phaser.Game({
-        type: Phaser.AUTO, width: 800, height: 600,
-        physics: { default: 'arcade', arcade: { debug: false } },
-        scene: GameScene
-    });
-};
+        function init() {
+            // Initialize or reset game state here
+        }
 
-2. NEVER destroy an object while iterating over its group. Mark it inactive or handle destruction safely.
-3. ALWAYS check 'if (object && object.active)' before applying physics or calculating gravity.
-4. Rate Limit inputs! If the player shoots, use time-based cooldowns.
+        function update(dt) {
+            // Handle physics, movement, and collisions here. Multiply speeds by dt!
+        }
 
-OUTPUT FORMAT — PURE JSON ONLY. Start your response with { and end with }:
-{
-  "files": [
-    { "filename": "index.html", "content": "<!DOCTYPE html>...", "fileType": "html" },
-    { "filename": "style.css", "content": "body { ... }", "fileType": "css" },
-    { "filename": "game.js", "content": "// Phaser game code...", "fileType": "js" }
-  ],
-  "entryPoint": "index.html"
-}`;
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            // Render shapes using ctx.fillRect, ctx.arc, etc.
+        }
+
+        function loop(timestamp) {
+            const dt = (timestamp - lastTime) / 1000 || 0; // Delta time in seconds
+            lastTime = timestamp;
+            
+            update(dt);
+            draw();
+            requestAnimationFrame(loop);
+        }
+
+        init();
+        requestAnimationFrame(loop);
+    </script>
+</body>
+</html>
+
+OUTPUT FORMAT:
+Output ONLY the raw, functional HTML code. 
+CRITICAL: DO NOT wrap the code in markdown blocks (\`\`\`html). DO NOT use backticks. 
+Start your response EXACTLY with <!DOCTYPE html> and end it EXACTLY with </html>. Do not add any conversational text.`;
+
+
+const SYSTEM_PROMPT_PHASER = `YYou are an elite Phaser 3 browser game developer. You write complete, production-quality, single-file HTML games using Phaser 3 loaded from CDN.
+
+═══════════════════════════════════════════════
+ABSOLUTE RULES — VIOLATION = INSTANT REJECTION:
+═══════════════════════════════════════════════
+[R1] ONE FILE ONLY
+  - Output EXACTLY ONE complete HTML document
+  - Phaser 3 loaded from CDN ONLY:
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
+  - ALL game code inside ONE <script> tag
+  - ZERO local asset files
+
+[R2] NO LOCAL ASSETS — EVER
+  - NEVER use this.load.image(), this.load.audio(), this.load.spritesheet() with local paths
+  - ALL visuals created with Phaser Graphics primitives ONLY:
+    this.add.graphics().fillStyle(0xFF0000).fillRect(x, y, w, h)
+  - For repeated entities: use graphics in create(), then setTexture via RenderTexture
+
+[R3] PHASER CONFIG IS MANDATORY
+  const config = {
+    type: Phaser.AUTO,
+    width: 800,
+    height: 600,
+    backgroundColor: '#1a1a2e',
+    physics: { default: 'arcade', arcade: { gravity: { y: 300 }, debug: false } },
+    scene: { preload, create, update }
+  };
+  new Phaser.Game(config);
+
+[R4] SCENE LIFECYCLE — STRICT ORDER
+  - preload(): ONLY asset loading (for CDN assets if any, nothing local)
+  - create(): ALL game object creation, physics setup, input setup, event listeners
+  - update(): ONLY per-frame logic — movement, collision checks, state updates
+  - NEVER create game objects in update()
+  - NEVER add input listeners in update()
+
+[R5] PHYSICS SETUP
+  - Enable arcade physics in config before using this.physics.add.*
+  - Static groups for platforms: this.physics.add.staticGroup()
+  - Dynamic groups for enemies: this.physics.add.group()
+  - Add colliders in create(): this.physics.add.collider(player, platforms)
+
+[R6] GRAPHICS-BASED ENTITIES
+  - Player: create graphics, use makeTexture/RenderTexture approach or set displaySize
+  - Preferred pattern:
+    const gfx = this.make.graphics({ x: 0, y: 0, add: false });
+    gfx.fillStyle(0x4488ff); gfx.fillRect(0, 0, 40, 40);
+    gfx.generateTexture('player', 40, 40);
+    gfx.destroy();
+    this.player = this.physics.add.sprite(400, 300, 'player');
+    
+You MUST use this exact single-file boilerplate to prevent crashes:
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Phaser Game</title>
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.55.2/dist/phaser.js"></script>
+    <style>
+        body { margin: 0; padding: 0; background: #111; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; }
+        canvas { box-shadow: 0 0 20px rgba(255,255,255,0.1); }
+    </style>
+</head>
+<body>
+    <script>
+        class GameScene extends Phaser.Scene {
+            constructor() { super('GameScene'); }
+            preload() { 
+                // Generate graphics textures here using this.add.graphics(). NO external images. 
+            }
+            create() {
+                // Initialize Physics, Colliders, State, and Input Keys here
+                this.cursors = this.input.keyboard.createCursorKeys();
+            }
+            update(time, delta) {
+                // Handle logic and strict time-based cooldowns here
+            }
+        }
+
+        window.onload = () => {
+            new Phaser.Game({
+                type: Phaser.AUTO, width: 800, height: 600,
+                physics: { default: 'arcade', arcade: { debug: false } },
+                scene: GameScene
+            });
+        };
+    </script>
+</body>
+</html>
+
+CRITICAL LOGIC RULES:
+1. NEVER destroy an object while iterating over its group.
+2. ALWAYS check 'if (object && object.active)' before applying physics.
+3. SHAPE PHYSICS RULE: NEVER use 'group.create(x, y, width, height, color)'. You MUST create shapes first using 'this.add.rectangle()', apply physics, then add to the group.
+4. INPUT HANDLING: NEVER use 'this.input.keyboard.addKey()' inside the 'update()' loop. Define all keys in 'create()'.
+
+OUTPUT FORMAT:
+Output ONLY the raw, functional HTML code. 
+CRITICAL: DO NOT wrap the code in markdown blocks (\`\`\`html). DO NOT use backticks. 
+Start your response EXACTLY with <!DOCTYPE html> and end it EXACTLY with </html>. Do not add any conversational text.`;
 
 export class CoderAgent {
 
@@ -135,54 +224,57 @@ export class CoderAgent {
         this.sessionId = sessionId;
     }
 
-    async build(plan: PlanResponse): Promise<BuildResponse> {
+    async *build(plan: PlanResponse, previousCode?: string, rewritePrompt?: string): AsyncGenerator<string> {
 
-        const systemPromt = plan.framework === 'vanilla' ? SYSTEM_PROMPT_VANILLA : SYSTEM_PROMPT_PHASER;
+        const systemPrompt = plan.framework === 'vanilla' ? SYSTEM_PROMPT_VANILLA : SYSTEM_PROMPT_PHASER;
 
-        const prompt = `
-        Build the following game:
+        let prompt = `
+            ${rewritePrompt && previousCode ? `
+            ⚠️ REWRITE REQUEST — Your previous code FAILED review.
 
-            Title: ${plan.title}
-            Description: ${plan.description}
-            Framework: ${plan.framework}
+            BROKEN CODE (what you wrote before):
+            ${previousCode}
 
-            Mechanics:
-            ${plan.mechanics.map((m) => `- ${m.name}: ${m.description}`).join("\n")}
+            ISSUES TO FIX (fix ONLY these, change nothing else):
+            ${rewritePrompt}
+            ---
+            ` : ''}
 
-            Controls:
-            ${plan.controls.map((c) => `- ${c.input} → ${c.action}`).join("\n")}
 
-            Systems: ${plan.systems.join(", ")}
+            BUILD THIS GAME:
+            TITLE: ${plan.title}
+            DESCRIPTION: ${plan.description}
+            FRAMEWORK: ${plan.framework}
 
-            Assets (use shapes/colors, no external files):
-            ${plan.assetDescriptions.map((a) => `- ${a}`).join("\n")}
+            VISUAL ASSETS — draw EXACTLY as described, no external files:
+            ${plan.assetDescriptions.map(a => `- ${a}`).join('\n')}
 
-            Game Loop:
+            MECHANICS (implement ALL):
+            ${plan.mechanics.map((m, i) => `${i + 1}. ${m.name}: ${m.description}`).join('\n')}
+
+            CONTROLS:
+            ${plan.controls.map(c => `- ${c.input}: ${c.action}`).join('\n')}
+
+            SYSTEMS: ${plan.systems.join(', ')}
+
+            GAME LOOP (follow step-by-step):
             ${plan.gameLoopDescription}
 
-            Generate the complete game code now.
-        `
+            Output raw HTML only. Start with <!DOCTYPE html>, end with </html>.
+            `;
 
-        const response = await this.llm.generate<BuildResponse>({
+        const generator = await this.llm.generate<BuildResponse>({
             prompt: prompt,
-            system: systemPromt,
-            json: true,
+            system: systemPrompt,
+            json: false,
+            stream: true,
             mode: 'BUILD',
             sessionId: this.sessionId
-        });
+        }) as AsyncGenerator<string>
 
-        if (response) {
-            await prisma.session.update({
-                where: {
-                    id: this.sessionId
-                },
-                data: {
-                    status: 'COMPLETED',
-                    code: response as unknown as Prisma.InputJsonObject,
-                }
-            })
+        for await (const chunk of generator) {
+            yield chunk
         }
 
-        return response
     }
 }
