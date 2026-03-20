@@ -25,7 +25,16 @@ OUTPUT FORMAT — STRICT JSON ONLY:
 ═══════════════════════════════════════════
 {
   "questions": [
-    "Full question text\\nA) Expert option one\\nB) Expert option two\\nC) Expert option three\\nD) Other (Please specify your own idea)"
+    {
+      "id": 1,
+      "question": "How should enemies behave?",
+      "options": [
+        { "key": "A", "text": "Chase the player directly" },
+        { "key": "B", "text": "Patrol fixed paths" },
+        { "key": "C", "text": "Random movement" },
+        { "key": "D", "text": "Other (Please specify your own idea)" }
+      ]
+    }
   ],
   "isSufficient": false,
   "summary": "What you already know for certain about the game.",
@@ -37,7 +46,7 @@ STRICT RULES:
 - Every question MUST have exactly 4 options: A, B, C, D
 - D is ALWAYS "Other (Please specify your own idea)"
 - Options A/B/C must be meaningfully different — not paraphrases
-- questions is an array of strings, each string contains the full question + options with \\n separators
+- questions is an array of MCQQuestion objects matching the JSON format above
 - Do NOT output markdown, prose, or any text outside the JSON
 `;
 
@@ -88,8 +97,11 @@ export class ClarifierAgent {
     async clarify(gameIdea: string, conversationHistory: ClarificationResponse | undefined = undefined): Promise<ClarificationResponse> {
 
         const prompt = conversationHistory
-            ? `PREVIOUS SUMMARY: ${conversationHistory.summary}\n\nOPEN QUESTIONS:\n${conversationHistory.questions.map((q, i) => `Q${i + 1}: ${q}`).join("\n\n")}\n\nUSER ANSWER: ${gameIdea}`
+            ? `PREVIOUS SUMMARY: ${conversationHistory.summary}\n\nQUESTIONS ASKED:\n${conversationHistory.questions.map((q, i) =>
+                `Q${i + 1}: ${q.question}\n${q.options.map(o => `  ${o.key}.) ${o.text}`).join('\n')}`
+            ).join('\n\n')}\n\nUSER ANSWER: ${gameIdea}`
             : `Game idea: ${gameIdea}\nAnalyze and ask clarifying questions.`;
+
 
         const response = await this.llm.generate<ClarificationResponse>({
             prompt: prompt,

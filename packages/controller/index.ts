@@ -6,7 +6,7 @@ import { CoderAgent } from "../agents/coder";
 import { ClarificationResponse, BuildResponse, PlanResponse } from "../model/types";
 
 interface ControllerOutput {
-    type: 'CLARIFYING' | 'PLANNING' | 'CODING' | 'COMPLETED' | 'ERROR' | 'INIT';
+    type: 'CLARIFYING' | 'PLANNING' | 'CODING' | 'COMPLETED' | 'ERROR' | 'INIT' | 'STREAM_REQUIRED';
     data: ClarificationResponse | PlanResponse | BuildResponse | string;
 }
 
@@ -60,10 +60,11 @@ export class Controller {
                     }
 
                 case 'BUILDING':
-                    const build = await builderAgent.build(session.plan as unknown as PlanResponse)
+                case 'REBUILD':
+                case 'REVIEW':
                     return {
-                        type: 'CODING',
-                        data: build as unknown as BuildResponse
+                        type: 'STREAM_REQUIRED',
+                        data: "Session requires Streaming - connecting to /api/stream"
                     }
 
                 case 'COMPLETED':

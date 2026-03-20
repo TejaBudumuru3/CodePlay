@@ -22,6 +22,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "tsx main.ts",
+    "dev": "cd apps/web && npm run dev",
     "db:push": "prisma db push --schema=./packages/model/db/prisma/schema.prisma",
     "db:generate": "prisma generate --schema=./packages/model/db/prisma/schema.prisma"
   },

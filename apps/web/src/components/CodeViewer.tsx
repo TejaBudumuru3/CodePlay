@@ -11,10 +11,12 @@ import "prismjs/components/prism-javascript";
 import "prismjs/themes/prism-tomorrow.css";
 
 export default function CodeViewer() {
-  const { code, plan, status } = useGameBuilder();
+  const { code, plan, status, streamingCode } = useGameBuilder();
   const [activeTab, setActiveTab] = useState("index.html");
   const [copied, setCopied] = useState(false);
   const codeRef = useRef<HTMLElement>(null);
+  const streamEndRef = useRef<HTMLDivElement>(null);
+
 
   useEffect(() => {
     if (codeRef.current) {
@@ -22,13 +24,20 @@ export default function CodeViewer() {
     }
   }, [activeTab, code]);
 
+  useEffect(() => {
+    if (streamingCode && streamEndRef.current) {
+      streamEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [streamingCode]);
+
+
   const handleDownloadZip = async () => {
     if (!code) return;
 
     const JSZip = (await import("jszip")).default;
 
     const zip = new JSZip();
-    code.files.forEach((file) => {
+    code.files?.forEach((file) => {
       zip.file(file.filename, file.content);
     });
 
@@ -47,11 +56,13 @@ export default function CodeViewer() {
     URL.revokeObjectURL(url);
   };
 
-  const handleCopy = async () => {
-    const file = code?.files.find((f) => f.filename === activeTab);
-    if (!file) return;
 
-    await navigator.clipboard.writeText(file.content);
+  const handleCopy = async () => {
+    const file = code?.files?.find((f) => f.filename === activeTab);
+    const content = code?.code ?? file?.content
+    if (!content) return;
+
+    await navigator.clipboard.writeText(content);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -77,10 +88,13 @@ export default function CodeViewer() {
     return "text-muted-foreground";
   };
 
-  const activeFile = code?.files.find((f) => f.filename === activeTab);
+  const isMultipleFiles = !!(code?.files?.length);
+  const singleFileCode = code?.code
+
+  const activeFile = isMultipleFiles ? code.files?.find((f) => f.filename === activeTab) : null;
 
   // Empty state
-  if (status !== "COMPLETED" || !code) {
+  if (!streamingCode && !code) {
     return (
       <div className="flex flex-col h-full">
         <div className="flex items-center px-4 py-3 border-b border-border/60 shrink-0 bg-card/30">
@@ -107,13 +121,34 @@ export default function CodeViewer() {
     );
   }
 
+  if (!code && streamingCode) {
+    return (
+      <div className="flex flex-col h-full">
+        <div className="flex items-center justify-between px-3 py-2 border-b border-border/60 bg-card/30 shrink-0">
+          <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
+            <FileCode2 className="w-3.5 h-3.5 text-muted-foreground" />
+            Code
+            <span className="text-xs text-indigo-400 font-normal animate-pulse">● Generating...</span>
+          </h2>
+        </div>
+
+        <div className="flex-1 overflow-auto p-2">
+          <pre className="bg-white min-h-full text-[12px] text-slate-700 whitespace-pre-wrap break-all font-mono leading-relaxed p-4">
+            {streamingCode}
+            <div ref={streamEndRef} />
+          </pre>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="flex flex-col h-full">
       {/* Header with tabs */}
       <div className="border-b border-border/60 shrink-0 bg-card/30">
         <div className="flex items-center justify-between px-3 py-2">
           <div className="flex items-center gap-0.5">
-            {code.files.map((file) => {
+            {code?.files?.map((file) => {
               const Icon = getFileIcon(file.filename);
               const color = getFileColor(file.filename);
               return (
@@ -163,13 +198,14 @@ export default function CodeViewer() {
 
       {/* Code display */}
       <div className="flex-1 overflow-auto p-2">
-        {activeFile && (
+        {(activeFile || singleFileCode) && (
           <pre className=" bg-white min-h-full">
+
             <code
               ref={codeRef}
-              className={`language-${getLanguage(activeFile.filename)} border-none bg-white`}
+              className={`language-${isMultipleFiles && activeFile ? getLanguage(activeFile?.filename) : 'markup'} border-none bg-white`}
             >
-              {activeFile.content}
+              {isMultipleFiles ? activeFile?.content : singleFileCode}
             </code>
           </pre>
         )}
@@ -182,7 +218,7 @@ export default function CodeViewer() {
             <span className="truncate mr-2">
               {plan.title} — {plan.framework === "phaser" ? "Phaser 3" : "Vanilla JS"}
             </span>
-            <span className="shrink-0">{code.files.length} files</span>
+            <span className="shrink-0">{code?.files?.length} files</span>
           </div>
         </div>
       )}

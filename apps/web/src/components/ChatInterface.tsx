@@ -5,8 +5,9 @@ import { Send, Sparkles, X, History, LogOut, User as UserIcon } from "lucide-rea
 import { useGameBuilder, type ChatMessage } from "@/context/GameBuilderContext";
 import ProgressIndicator from "./ProgressIndicator";
 import { cn } from "@/lib/utils";
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { signOut, useSession } from "next-auth/react";
+import { ClarificationResponse, MCQQuestion } from "@packages/model/types";
 
 export default function ChatInterface({
   onToggleHistory,
@@ -26,6 +27,8 @@ export default function ChatInterface({
   } = useGameBuilder();
 
   const [input, setInput] = useState("");
+  const [mcqselection, setMcqSelection] = useState<Record<number, string>>({});
+  const [mcqCustomText, setMcqCustomText] = useState<Record<number, string>>({})
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -38,6 +41,99 @@ export default function ChatInterface({
       inputRef.current?.focus();
     }
   }, [status, isLoading]);
+
+  const handleMCQSubmit = async (questions: MCQQuestion[]) => {
+    if (isLoading) return;
+
+    const formatted = questions.map((q) => {
+      const key = mcqselection[q.id];
+      if (!key) return null;
+
+      const option = q.options.find(o => o.key === key);
+      const text = key === 'D' && mcqCustomText[q.id]
+        ? mcqCustomText[q.id]
+        : option?.text ?? '';
+
+      return `Q${q.id}: ${key} - ${text}`
+    }).filter(Boolean).join('\n')
+
+    const allAnswered = questions.every(q => mcqselection[q.id]);
+
+    if (!allAnswered) return null;
+
+    setMcqCustomText({});
+    setMcqSelection({})
+
+    await answerClarification(formatted)
+
+  }
+
+  const renderMCQCard = (clarification: ClarificationResponse, msgId: string) => {
+    const questions = clarification.questions;
+    const allAnswered = questions.length > 0 && questions.every(q => mcqselection[q.id]);
+
+    return (
+      <div className="flex flex-col gap-4">
+        {questions.map((q) => (
+          <div key={q.id} className="bg-white/90 border border-slate-200 rounded-2xl p-4 shadow-sm">
+            <p className="text-[14px] font-semibold text-slate-800 mb-3">
+              {q.id}. {q.question}
+            </p>
+            <div className="flex flex-col gap-2">
+              {q.options.map((opt) => {
+                const isSelected = mcqselection[q.id] === opt.key;
+                return (
+                  <div key={opt.key}>
+                    <button
+                      onClick={() => setMcqSelection(prev => ({ ...prev, [q.id]: opt.key }))}
+                      className={cn(
+                        "w-full text-left px-4 py-2.5 rounded-xl text-[13px] font-medium border transition-all duration-200",
+                        isSelected
+                          ? "bg-indigo-500 text-white border-indigo-500 shadow-sm"
+                          : "bg-white text-slate-700 border-slate-200 hover:border-indigo-300 hover:bg-indigo-50"
+                      )}
+                    >
+                      <span className="font-bold mr-2">{opt.key}.</span>{opt.text}
+                    </button>
+                    <AnimatePresence>
+                      {(opt.key === 'D' && isSelected) && (
+                        <motion.div
+                          initial={{ opacity: 0, y: -10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -10 }}
+                          transition={{ duration: 0.2 }}
+                        >
+                          <input
+                            type="text"
+                            placeholder="Describe you answer..."
+                            onChange={(e) => setMcqCustomText(prev => ({ ...prev, [q.id]: e.target.value }))}
+                            className="mt-2 w-full  px-4 py-2 text-[13px] border border-indigo-300 rounded-xl focus:outline-none focus:ring-2  focus:ring-indigo-300 bg-white"
+                          />
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        ))}
+
+        <button
+          onClick={() => handleMCQSubmit(questions)}
+          disabled={!allAnswered || isLoading}
+          className={cn(
+            "w-full py-3 rounded-2xl text-[14px] font-bold transition-all duration-300",
+            "bg-gradient-to-r from-indigo-500 to-blue-600 text-white shadow-md",
+            "hover:shadow-lg hover:scale-[1.01] active:scale-[0.99]",
+            "disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100"
+          )}
+        >
+          Submit Answers →
+        </button>
+      </div>
+    )
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,7 +149,7 @@ export default function ChatInterface({
     }
   };
 
-  const canSendMessage = status === "IDLE" || status === "CLARIFYING";
+  const canSendMessage = status === "IDLE";
 
   const getPlaceholder = () => {
     if (isLoading) return "Analyzing data, please wait...";
@@ -100,6 +196,12 @@ export default function ChatInterface({
               <p className="text-[14px] text-slate-700 whitespace-pre-wrap leading-relaxed">
                 {msg.content}
               </p>
+
+              {msg.data && 'questions' in msg.data &&
+                Array.isArray((msg.data as any).questions) && (
+                  renderMCQCard(msg.data as ClarificationResponse, msg.id)
+                )
+              }
             </div>
           </div>
         );
@@ -130,20 +232,20 @@ export default function ChatInterface({
     <div className="flex flex-col h-full m-0 relative overflow-hidden bg-transparent w-full">
       {/* Absolute Floating Header Buttons */}
       <div className="px-8 py-6 shrink-0 z-20 flex justify-between items-center absolute top-0 w-full pointer-events-none">
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.3, ease: [0.23, 1, 0.32, 1] }}
           className="flex md:hidden items-center gap-2 pointer-events-auto"
         >
           <div className="w-10 h-10 rounded-full bg-white border-2 border-white shadow-sm flex items-center justify-center overflow-hidden">
-             {session?.user?.image ? (
-               <img src={session.user.image} alt="User" className="w-full h-full object-cover" />
-             ) : (
-               <UserIcon className="w-4 h-4 text-slate-500" />
-             )}
+            {session?.user?.image ? (
+              <img src={session.user.image} alt="User" className="w-full h-full object-cover" />
+            ) : (
+              <UserIcon className="w-4 h-4 text-slate-500" />
+            )}
           </div>
-          <button 
+          <button
             onClick={() => signOut({ callbackUrl: "/" })}
             className="w-10 h-10 rounded-full bg-white/80 backdrop-blur-md shadow-sm border border-white flex items-center justify-center text-slate-500 hover:text-red-500 transition-all duration-300"
             title="Log out"
@@ -151,7 +253,7 @@ export default function ChatInterface({
             <LogOut className="w-4 h-4" />
           </button>
         </motion.div>
-        
+
         <div className="hidden md:block w-11 h-11 pointer-events-none"></div>
 
         <motion.button

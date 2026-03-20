@@ -1,6 +1,12 @@
 "use client";
 
 import {
+  ClarificationResponse,
+  PlanResponse,
+  BuildResponse,
+  SessionStatus
+} from "@packages/model/types";
+import {
   createContext,
   useContext,
   useState,
@@ -8,45 +14,6 @@ import {
   useRef,
   type ReactNode,
 } from "react";
-
-// Types matching the backend
-interface ClarificationResponse {
-  questions: string[];
-  isSufficient: boolean;
-  summary: string;
-  confidence: number;
-}
-
-interface PlanResponse {
-  title: string;
-  description: string;
-  framework: "vanilla" | "phaser";
-  mechanics: { name: string; description: string }[];
-  controls: { input: string; action: string }[];
-  systems: string[];
-  assetDescriptions: string[];
-  gameLoopDescription: string;
-}
-
-interface CodeFile {
-  filename: string;
-  content: string;
-  type: string;
-}
-
-interface BuildResponse {
-  files: CodeFile[];
-  entryPoint: string;
-}
-
-export type SessionStatus =
-  | "IDLE"
-  | "INIT"
-  | "CLARIFYING"
-  | "PLANNING"
-  | "BUILDING"
-  | "COMPLETED"
-  | "FAILED";
 
 export interface ChatMessage {
   id: string;
@@ -71,6 +38,7 @@ interface GameBuilderState {
   clarification: ClarificationResponse | null;
   plan: PlanResponse | null;
   code: BuildResponse | null;
+  streamingCode: string;
   error: string | null;
   isLoading: boolean;
   sessions: SessionSummary[];
@@ -104,6 +72,7 @@ export function GameBuilderProvider({ children }: { children: ReactNode }) {
     clarification: null,
     plan: null,
     code: null,
+    streamingCode: "",
     error: null,
     isLoading: false,
     sessions: [],
@@ -112,7 +81,8 @@ export function GameBuilderProvider({ children }: { children: ReactNode }) {
   const pollingRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isPollingRef = useRef(false);
   // Stable ref so polling callbacks can refresh sessions without circular deps
-  const loadSessionsRef = useRef<() => Promise<void>>(async () => {});
+  const loadSessionsRef = useRef<() => Promise<void>>(async () => { });
+  const eventSourceRef = useRef<EventSource | null>(null);
 
   const addMessage = useCallback(
     (role: ChatMessage["role"], content: string, data?: ChatMessage["data"]) => {
@@ -126,6 +96,120 @@ export function GameBuilderProvider({ children }: { children: ReactNode }) {
     },
     []
   );
+
+  const startStream = useCallback((sessionId: string) => {
+
+    if (eventSourceRef.current) {
+      eventSourceRef.current.close()
+      eventSourceRef.current = null;
+    }
+
+    setState((prev) => ({
+      ...prev,
+      streamingCode: "",
+      isLoading: true,
+      status: "BUILDING",
+    }))
+
+    addMessage("status", "connecting to agent to start building....");
+
+    const es = new EventSource(`/api/stream?sessionId=${sessionId}`);
+    eventSourceRef.current = es;
+
+    es.addEventListener("code_chunk", (e) => {
+      const { chunk } = JSON.parse(e.data);
+      setState((prev) => ({
+        ...prev,
+        streamingCode: prev.streamingCode + chunk,
+        status: 'BUILDING'
+      }));
+    });
+
+    es.addEventListener("status", (e) => {
+      const { status, attempt, max } = JSON.parse(e.data);
+      setState((prev) => ({
+        ...prev,
+        status: status as SessionStatus
+      }));
+
+      if (status === 'REVIEW') {
+        addMessage("status", `Code Reviewer reviewing the code${attempt ? ` (attempt ${attempt}/${max})` : '...'}`)
+      }
+
+      else if (status === 'REBUILD') {
+        addMessage("status", `Issue found, resolving the issues ${attempt ? `(attempt ${attempt}/${max})` : "..."} `)
+        setState((prev) => ({ ...prev, streamingCode: "", }))
+      }
+    })
+
+    es.addEventListener("review_result", (e) => {
+      const { passed, issues } = JSON.parse(e.data);
+      if (passed) {
+        addMessage("status", 'code review passed ')
+      }
+      else {
+        addMessage('status', `Reviewer found ${issues?.length ?? 0} issues(s) - fixing...`)
+      }
+    })
+
+
+    es.addEventListener("complete", (e) => {
+      const { code } = JSON.parse(e.data);
+      setState((prev) => ({
+        ...prev,
+        status: "COMPLETED",
+        code: { code },
+        streamingCode: "",
+        isLoading: false
+      }))
+
+      addMessage('agent', 'Your game is ready, checK the Code and Preview tabs')
+      void loadSessionsRef.current();
+      es.close();
+      eventSourceRef.current = null;
+    })
+
+    es.addEventListener("error", (e) => {
+      if (es.readyState === EventSource.CLOSED) {
+        setState((prev) => ({
+          ...prev,
+          status: 'FAILED',
+          error: "stream connection lost",
+          isLoading: false
+        }))
+        addMessage('system', 'Stream connection lost, please try again');
+        eventSourceRef.current = null;
+      }
+      else {
+        try {
+          const { message } = JSON.parse((e as MessageEvent).data);
+          setState((prev) => ({
+            ...prev,
+            status: 'FAILED',
+            error: message,
+            isLoading: false
+          }))
+
+          addMessage('system', `Build Failed ${message}`)
+        }
+        catch {
+          setState((prev) => ({
+            ...prev,
+            status: 'FAILED',
+            error: "Unknown error",
+            isLoading: false
+          }))
+          addMessage('system', "Build Failed: Unknown error")
+        }
+        finally {
+          es.close();
+          eventSourceRef.current = null;
+        }
+      }
+    })
+
+
+  }, [addMessage]);
 
   const stopPolling = useCallback(() => {
     isPollingRef.current = false;
@@ -178,13 +262,10 @@ export function GameBuilderProvider({ children }: { children: ReactNode }) {
               status: "CLARIFYING",
               clarification,
             }));
-            const questionsText = clarification.questions
-              .map((q, i) => `${i + 1}. ${q}`)
-              .join("\n");
             addMessage(
               "agent",
-              `I need a few clarifications to build your game:\n\n${questionsText}`,
-              clarification
+              "I have a few questions to design your game:",
+              clarification   // pass the full object — ChatInterface will render MCQ cards from msg.data
             );
           }
           break;
@@ -206,19 +287,8 @@ export function GameBuilderProvider({ children }: { children: ReactNode }) {
           break;
         }
 
-        case "CODING": {
-          const code = data as BuildResponse;
-          setState((prev) => ({
-            ...prev,
-            status: "COMPLETED",
-            code,
-          }));
-          addMessage(
-            "agent",
-            `Your game is ready! ${code.files.length} files generated. Check the Code tab to view and download.`,
-            code
-          );
-          stopPolling();
+        case "STREAM_REQUIRED": {
+          startStream(sessionId);
           break;
         }
 
@@ -245,7 +315,7 @@ export function GameBuilderProvider({ children }: { children: ReactNode }) {
         }
       }
     },
-    [addMessage, stopPolling]
+    [addMessage, stopPolling, startStream]
   );
 
   const pollNext = useCallback(
@@ -387,7 +457,7 @@ export function GameBuilderProvider({ children }: { children: ReactNode }) {
             messages.push({
               id: generateId(),
               role: "agent",
-              content: clar.questions.map((q: string, i: number) => `${i + 1}. ${q}`).join("\n"),
+              content: "Previous Questions",
               timestamp: new Date(session.createdAt),
               data: clar,
             });
@@ -411,7 +481,7 @@ export function GameBuilderProvider({ children }: { children: ReactNode }) {
           messages.push({
             id: generateId(),
             role: "agent",
-            content: `Game completed! ${(session.code as BuildResponse).files.length} files generated.`,
+            content: `Game completed!`,
             timestamp: new Date(session.createdAt),
             data: session.code as BuildResponse,
           });
@@ -430,8 +500,12 @@ export function GameBuilderProvider({ children }: { children: ReactNode }) {
         }));
 
         // If session is in-progress, resume polling
-        if (["PLANNING", "BUILDING"].includes(session.status)) {
+        if (session.status === 'PLANNING') {
           pollNext(sessionId);
+        }
+        else if (['BUILDING', 'REVIEW', 'REBUILD'].includes(session.status)) {
+          addMessage('status', 'Resuming build from where we left off...')
+          startStream(sessionId)
         }
       } catch (err) {
         setState((prev) => ({
@@ -441,7 +515,7 @@ export function GameBuilderProvider({ children }: { children: ReactNode }) {
         }));
       }
     },
-    [stopPolling, pollNext]
+    [stopPolling, pollNext, startStream, addMessage]
   );
 
   const loadSessions = useCallback(async () => {
@@ -460,6 +534,10 @@ export function GameBuilderProvider({ children }: { children: ReactNode }) {
 
   const resetGame = useCallback(() => {
     stopPolling();
+    if (eventSourceRef.current) {
+      eventSourceRef.current.close();
+      eventSourceRef.current = null;
+    }
     setState((prev) => ({
       ...prev,
       sessionId: null,
@@ -469,6 +547,7 @@ export function GameBuilderProvider({ children }: { children: ReactNode }) {
       plan: null,
       code: null,
       error: null,
+      streamingCode: "",
       isLoading: false,
     }));
   }, [stopPolling]);

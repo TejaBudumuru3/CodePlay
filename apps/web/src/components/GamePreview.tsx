@@ -13,11 +13,20 @@ export default function GamePreview() {
   const containerRef = useRef<HTMLDivElement>(null);
 
   const buildSrcdoc = useCallback(() => {
-    if (!code?.files) return null;
+    if (!code) return null;
 
-    const htmlFile = code.files.find((f) => f.filename.endsWith(".html"));
-    const cssFile = code.files.find((f) => f.filename.endsWith(".css"));
-    const jsFile = code.files.find((f) => f.filename.endsWith(".js"));
+    if (code.code) {
+      let html = code.code;
+      const isPhaser = html.toLowerCase().includes('phaser');
+      if (isPhaser && !html.includes('cdn.jsdelivr.net/npm/phaser')) {
+        const cdn = `<script src="https://cdn.jsdelivr.net/npm/phaser@3/dist/phaser.min.js"></script>\n`;
+        html = html.replace('</head>', cdn + '</head>')
+      }
+      return html
+    }
+    const htmlFile = code?.files?.find((f) => f.filename.endsWith(".html"));
+    const cssFile = code?.files?.find((f) => f.filename.endsWith(".css"));
+    const jsFile = code?.files?.find((f) => f.filename.endsWith(".js"));
 
     if (!htmlFile) return null;
 
@@ -43,7 +52,7 @@ export default function GamePreview() {
       : "";
 
     const viewportMeta = `<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">`;
-    
+
     const baseStyles = `
       <style>
         body, html { 
@@ -118,7 +127,7 @@ export default function GamePreview() {
   }, []);
 
   // Empty state
-  if (status !== "COMPLETED" || !code) {
+  if (!code) {
     return (
       <div className="flex flex-col h-full">
         <div className="flex items-center px-4 py-3 border-b border-border shrink-0">
@@ -141,6 +150,12 @@ export default function GamePreview() {
             </p>
           </div>
         </div>
+
+        {(status === "BUILDING" || status === "REVIEW" || status === "REBUILD") && (
+          <p className="text-xs text-indigo-400 animate-pulse mt-2">
+            Code is being generated, preview will appear when complete...
+          </p>
+        )}
       </div>
     );
   }

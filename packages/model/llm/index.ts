@@ -32,7 +32,7 @@ export class LLM {
     async generate<T>(params: prepareParams): Promise<T | AsyncGenerator<string, void, unknown>> {
         const model = params.mode === 'PLAN' ? MODEL : CODEMODEL
         const hashPrompt = this.hash(params.system + params.prompt);
-        const tokens = params.mode === 'BUILD' ? 16000 : 4096;
+        const tokens = params.mode === 'BUILD' ? 16000 : 8192;
         const temp = params.mode === 'BUILD' ? 0.2 : 0.1;
         const messages = [
             { "role": "system" as const, "content": params.system },
@@ -142,8 +142,8 @@ export class LLM {
                         })
                         throw new Error("No content in LLM response");
                     }
-
-                    const parsedResponse = params.json ? JSON.parse(content) : content;
+                    console.log(content)
+                    const parsedResponse = params.json ? JSON.parse(content) : content as T;
 
 
                     await prisma.llmCache.create({

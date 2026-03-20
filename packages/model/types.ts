@@ -35,8 +35,9 @@ export interface PlanResponse {
 }
 
 export interface BuildResponse {
-    code: string;
-    title: string;
+    files?: { filename: string; content: string; type: string }[];
+    entryPoint?: string;
+    code?: string;
 }
 
 export interface ReviewerResponse {
@@ -44,3 +45,14 @@ export interface ReviewerResponse {
     remarks: string | null;
     issues: { severity: string; code: string; description: string; brokenCode: string; fix: string }[];
 }
+
+export type SessionStatus =
+    | "IDLE"
+    | "INIT"
+    | "CLARIFYING"
+    | "PLANNING"
+    | "BUILDING"
+    | "REVIEW"
+    | "REBUILD"
+    | "COMPLETED"
+    | "FAILED";

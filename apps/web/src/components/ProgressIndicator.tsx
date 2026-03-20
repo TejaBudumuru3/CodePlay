@@ -1,8 +1,9 @@
 "use client";
 
-import { Loader2, Sparkles, Wrench, Brain } from "lucide-react";
+import { Loader2, Sparkles, Wrench, Brain, ShieldCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { SessionStatus } from "@/context/GameBuilderContext";
+import { SessionStatus } from "@packages/model/types";
+
 
 interface ProgressIndicatorProps {
   status: SessionStatus;
@@ -44,6 +45,22 @@ const statusConfig: Record<
     bgFrom: "from-emerald-500/15",
     bgTo: "to-emerald-400/5",
   },
+  REVIEW: {
+    icon: ShieldCheck,
+    label: "Reviewing",
+    sublabel: "AI reviewer checking the generated code...",
+    color: "text-violet-400",
+    bgFrom: "from-violet-500/15",
+    bgTo: "to-violet-400/5",
+  },
+  REBUILD: {
+    icon: Wrench,
+    label: "Rebuilding",
+    sublabel: "Fixing issues found in review...",
+    color: "text-orange-400",
+    bgFrom: "from-orange-500/15",
+    bgTo: "to-orange-400/5",
+  },
 };
 
 export default function ProgressIndicator({ status }: ProgressIndicatorProps) {
@@ -51,7 +68,7 @@ export default function ProgressIndicator({ status }: ProgressIndicatorProps) {
   if (!config) return null;
 
   const Icon = config.icon;
-  const stepOrder = ["INIT", "CLARIFYING", "PLANNING", "BUILDING", "COMPLETED"];
+  const stepOrder = ["INIT", "CLARIFYING", "PLANNING", "BUILDING", "REVIEW", "REBUILD", "COMPLETED"];
   const currentIdx = stepOrder.indexOf(status);
 
   return (
