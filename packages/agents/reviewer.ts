@@ -55,6 +55,10 @@ export class ReviewerAgent {
             - The code implements a totally different game genre than what was planned
             - The user's core mechanic is entirely absent
 
+            [F7] ANY COMMENTS IN CODE
+            - If the generated code contains ANY comments (such as // or /*), you MUST FAIL it immediately.
+            - Comments break the execution because the parser strips newlines.
+
             ═══════════════════════════════════════════════
             CRITICAL CHECKS — Only fail if the game CANNOT BE PLAYED because of this:
             ═══════════════════════════════════════════════
@@ -62,12 +66,16 @@ export class ReviewerAgent {
             [C1] Event listeners added inside the game loop causing a crash or freeze
             [C2] Infinite loop without exit that would freeze the browser tab
             [C3] Game starts but immediately errors out with no recovery
+            [C4] BROKEN GAMEPLAY LOGIC OR PHYSICS
+            - Movement speeds are tiny (e.g., 5 instead of 300+ pixels per second) making it unplayable.
+            - Object collisions behave completely wrong (e.g., hitting a paddle deducts a life instead of bouncing).
+            - Objects don't move because velocity is missing or not multiplied by dt properly.
 
             ═══════════════════════════════════════════════
             PASS PHILOSOPHY:
             ═══════════════════════════════════════════════
             - Missing score display → PASS
-            - Slightly wrong physics values → PASS
+            - Slightly wrong colors or layout → PASS
             - Minor visual differences from plan → PASS
             - Missing polish or animations → PASS
             - Code style issues → PASS

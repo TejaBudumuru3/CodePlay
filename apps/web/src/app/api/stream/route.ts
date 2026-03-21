@@ -49,6 +49,16 @@ export async function GET(req: NextRequest) {
                 let reviewCount = gameSession.reviewCount || 0;
                 let currentStatus = gameSession.status;
 
+                // Handle Retry when FAILED but code generation is requested
+                if (currentStatus === 'FAILED') {
+                    currentStatus = code ? 'REBUILD' : 'BUILDING';
+                    await prisma.session.update({
+                        where: { id: sessionId },
+                        data: { status: currentStatus, error: null }
+                    });
+                    gameSession.status = currentStatus;
+                }
+
                 if (currentStatus === "BUILDING" && !code) {
                     send("status", { status: "BUILDING" });
 

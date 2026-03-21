@@ -42,6 +42,7 @@ interface GameBuilderState {
   error: string | null;
   isLoading: boolean;
   sessions: SessionSummary[];
+  reviewCount: number;
 }
 
 interface GameBuilderContextType extends GameBuilderState {
@@ -50,6 +51,7 @@ interface GameBuilderContextType extends GameBuilderState {
   loadSession: (sessionId: string) => Promise<void>;
   loadSessions: () => Promise<void>;
   resetGame: () => void;
+  retry: () => void;
 }
 
 const GameBuilderContext = createContext<GameBuilderContextType | null>(null);
@@ -76,6 +78,7 @@ export function GameBuilderProvider({ children }: { children: ReactNode }) {
     error: null,
     isLoading: false,
     sessions: [],
+    reviewCount: 0,
   });
 
   const pollingRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -129,7 +132,8 @@ export function GameBuilderProvider({ children }: { children: ReactNode }) {
       const { status, attempt, max } = JSON.parse(e.data);
       setState((prev) => ({
         ...prev,
-        status: status as SessionStatus
+        status: status as SessionStatus,
+        reviewCount: attempt || prev.reviewCount
       }));
 
       if (status === 'REVIEW') {
@@ -368,6 +372,7 @@ export function GameBuilderProvider({ children }: { children: ReactNode }) {
         code: null,
         error: null,
         isLoading: true,
+        reviewCount: 0,
       }));
 
       addMessage("user", prompt);
@@ -436,6 +441,7 @@ export function GameBuilderProvider({ children }: { children: ReactNode }) {
         code: null,
         error: null,
         isLoading: true,
+        reviewCount: 0,
       }));
 
       try {
@@ -497,6 +503,7 @@ export function GameBuilderProvider({ children }: { children: ReactNode }) {
           code: session.status === "COMPLETED" ? (session.code as BuildResponse) : null,
           error: session.error || null,
           isLoading: false,
+          reviewCount: session.reviewCount || 0,
         }));
 
         // If session is in-progress, resume polling
@@ -549,8 +556,22 @@ export function GameBuilderProvider({ children }: { children: ReactNode }) {
       error: null,
       streamingCode: "",
       isLoading: false,
+      reviewCount: 0,
     }));
   }, [stopPolling]);
+
+  const retry = useCallback(() => {
+    if (!state.sessionId) return;
+    
+    // Clear any previous error and set to loading
+    setState((prev) => ({ ...prev, error: null, isLoading: true }));
+    
+    if (state.plan) {
+      startStream(state.sessionId);
+    } else {
+      pollNext(state.sessionId);
+    }
+  }, [state.sessionId, state.plan, startStream, pollNext]);
 
   return (
     <GameBuilderContext.Provider
@@ -561,6 +582,7 @@ export function GameBuilderProvider({ children }: { children: ReactNode }) {
         loadSession,
         loadSessions,
         resetGame,
+        retry,
       }}
     >
       {children}

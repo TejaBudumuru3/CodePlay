@@ -4,8 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev --webpack",
-    "prebuild": "cd ../../ && npm run db:generate",
-    "build": "npm run prebuild && next build --webpack",
+    "build": "next build --webpack",
     "start": "next start",
     "lint": "eslint"
   },
@@ -24,7 +23,11 @@
     "prismjs": "^1.30.0",
     "react": "19.2.3",
     "react-dom": "19.2.3",
-    "tailwind-merge": "^3.5.0"
+    "tailwind-merge": "^3.5.0",
+    "db": "*",
+    "llm": "*",
+    "agents": "*",
+    "controller": "*"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

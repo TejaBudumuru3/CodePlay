@@ -14,6 +14,7 @@ interface prepareParams {
     json?: boolean;
     sessionId: string;
     stream?: boolean;
+    skipCache?: boolean;
 }
 export class LLM {
     private client: OpenAI;
@@ -40,36 +41,39 @@ export class LLM {
         ];
 
         try {
-            const cached = await prisma.llmCache.findUnique({
-                where: {
-                    promptHash: hashPrompt
-                }
-            })
-
-            if (cached) {
-                try {
-
-                    if (params.stream) {
-                        return (async function* () {
-                            yield cached.response as string;
-                        })() as AsyncGenerator<string, void, unknown>
+            if (params.skipCache) {
+                console.log("[LLM] Cache skipped for this request (skipCache=true)");
+            } else {
+                const cached = await prisma.llmCache.findUnique({
+                    where: {
+                        promptHash: hashPrompt
                     }
-                    else {
-                        return (params.json
-                            ? JSON.parse(cached.response as string)
-                            : cached.response
-                        ) as T;
-                    }
-                } catch (err) {
-                    console.error("[Stream - error] Error in returning cached response: ", err);
-                    await prisma.session.update({
-                        where: { id: params.sessionId },
-                        data: {
-                            status: 'FAILED',
-                            error: err instanceof Error ? err.message : "Stream interrupted"
+                })
+
+                if (cached) {
+                    try {
+                        if (params.stream) {
+                            return (async function* () {
+                                yield cached.response as string;
+                            })() as AsyncGenerator<string, void, unknown>
                         }
-                    });
-                    throw err;
+                        else {
+                            return (params.json
+                                ? JSON.parse(cached.response as string)
+                                : cached.response
+                            ) as T;
+                        }
+                    } catch (err) {
+                        console.error("[Stream - error] Error in returning cached response: ", err);
+                        await prisma.session.update({
+                            where: { id: params.sessionId },
+                            data: {
+                                status: 'FAILED',
+                                error: err instanceof Error ? err.message : "Stream interrupted"
+                            }
+                        });
+                        throw err;
+                    }
                 }
             }
 
@@ -90,7 +94,8 @@ export class LLM {
                                 fullRes += text;
                                 yield text;
                             }
-                            if (!fullRes) {
+                            if (!fullRes || !fullRes.trim()) {
+                                console.error("[LLM - Stream] Stream ended but produced no text content. The LLM might have output invisible characters or a weird response object.");
                                 throw new Error("No content in LLM stream");
                             }
 
@@ -135,16 +140,16 @@ export class LLM {
                     })
                     const content = res.choices[0]?.message?.content;
 
-                    if (!content) {
+                    if (!content || !content.trim()) {
+                        console.error("[LLM - Error] Empty content in non-stream response. Full response object:", JSON.stringify(res, null, 2));
                         await prisma.session.update({
                             where: { id: params.sessionId },
                             data: { status: 'FAILED', error: "No content in LLM response" }
                         })
                         throw new Error("No content in LLM response");
                     }
-                    console.log(content)
+                    console.log("[LLM - Success] Non-streamed content length:", content.length);
                     const parsedResponse = params.json ? JSON.parse(content) : content as T;
-
 
                     await prisma.llmCache.create({
                         data: {

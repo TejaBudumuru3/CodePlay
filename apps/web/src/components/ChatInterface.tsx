@@ -24,6 +24,9 @@ export default function ChatInterface({
     startNewGame,
     answerClarification,
     resetGame,
+    retry,
+    reviewCount,
+    plan,
   } = useGameBuilder();
 
   const [input, setInput] = useState("");
@@ -156,6 +159,7 @@ export default function ChatInterface({
     if (status === "IDLE") return "Ask me anything...";
     if (status === "CLARIFYING") return "Answer the questions above...";
     if (status === "COMPLETED") return "Game complete! Start a new game.";
+    if (status === "FAILED") return "Error occurred.";
     return "Waiting...";
   };
 
@@ -320,6 +324,40 @@ export default function ChatInterface({
             <div className="w-full">
               <ProgressIndicator status={status} />
             </div>
+          )}
+
+          {/* FAILED STATE UI */}
+          {status === 'FAILED' && (
+             <div className="flex justify-center mt-6 animate-slide-up w-full px-4">
+               <div className="bg-red-50/80 backdrop-blur-sm border border-red-200 rounded-2xl p-6 w-full max-w-lg shadow-sm text-center">
+                 <h4 className="text-red-700 font-bold mb-2">Process Failed</h4>
+                 
+                 {reviewCount >= 3 ? (
+                    <>
+                       <p className="text-red-600/80 text-[14px] mb-6">
+                         The game failed to pass the code reviewer after 3 maximum attempts. The fixes required are too complex.
+                       </p>
+                       <button onClick={resetGame} className="w-full py-3 rounded-xl bg-red-600 text-white font-semibold hover:bg-red-700 transition-all active:scale-[0.98]">
+                         Start New Session
+                       </button>
+                    </>
+                 ) : (
+                    <>
+                       <p className="text-red-600/80 text-[14px] mb-6">
+                         An unexpected error interrupted the builder. You can retry the current step.
+                       </p>
+                       <div className="flex gap-3">
+                         <button onClick={resetGame} className="flex-1 py-3 rounded-xl bg-white border border-red-200 text-red-600 font-semibold hover:bg-red-50 transition-all active:scale-[0.98]">
+                           Start Over
+                         </button>
+                         <button onClick={retry} className="flex-1 py-3 rounded-xl bg-red-600 text-white font-semibold hover:bg-red-700 transition-all active:scale-[0.98] shadow-md shadow-red-500/20">
+                           {plan ? "Retry Generation" : "Retry Planning"}
+                         </button>
+                       </div>
+                    </>
+                 )}
+               </div>
+             </div>
           )}
 
           <div ref={messagesEndRef} />

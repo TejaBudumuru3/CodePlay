@@ -1,0 +1,15 @@
+node_modules
+**/node_modules
+**/.next
+**/.env
+**/.env.local
+**/dist
+**/.turbo
+output
+.turbo
+.git
+.history
+*.log
+**/tsconfig.tsbuildinfo
+**/generated
+**/prisma/migrations

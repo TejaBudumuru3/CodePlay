@@ -39,14 +39,13 @@ ABSOLUTE RULES — VIOLATION = INSTANT REJECTION:
   - Wrap ALL game initialization in: window.addEventListener('load', () => { init(); requestAnimationFrame(loop); })
   - Never access DOM elements before the load event
 
-[R7] COMMENT PLACEMENT — CRITICAL
-  - NEVER place executable code on the same line as a // comment
-  - Comments MUST be on their own separate line, ABOVE the code they describe
-  - ❌ WRONG:  // game loop        function update(dt) { ... }
-  - ✅ CORRECT:
-    // game loop
-    function update(dt) { ... }
-  - This rule applies everywhere — inline code after // is silently ignored by JavaScript
+[R7] ABSOLUTELY NO COMMENTS ALLOWED — CRISIS LEVEL PRIORITY
+  - You are STRICTLY FORBIDDEN from writing ANY comments in the code.
+  - NO single-line comments (//)
+  - NO multi-line comments (/* */)
+  - NO HTML comments (<!-- -->)
+  - WHY: The streaming output strips newlines. If you write a comment, it breaks the entire game syntax.
+  - Only output executable code, HTML, and CSS.
 
 [R8] NO DUPLICATE FUNCTION NAMES
   - Each function name must appear EXACTLY ONCE with the 'function' keyword
@@ -58,6 +57,17 @@ ABSOLUTE RULES — VIOLATION = INSTANT REJECTION:
   - Count your braces — never leave a function body open or close it too early
 
 ═══════════════════════════════════════════════
+GAMEPLAY & PHYSICS STANDARDS — HIGH PRIORITY:
+═══════════════════════════════════════════════
+[P1] REASONABLE SPEEDS
+  - ALL movement speeds MUST be in PIXELS PER SECOND (e.g., 300, 500, 800).
+  - DO NOT use tiny values like 5 or 8. Since you multiply by dt (seconds), 5 * dt = 0.08 pixels per frame, which is completely broken.
+
+[P2] LOGICAL COLLISIONS
+  - When a ball hits a paddle/player, IT MUST BOUNCE (vy = -vy), NOT lose a life!
+  - Lives are ONLY lost if the ball goes OUT OF BOUNDS past the player.
+
+═══════════════════════════════════════════════
 CODE QUALITY STANDARDS:
 ═══════════════════════════════════════════════
 - All variables declared with const/let — no var
@@ -65,10 +75,6 @@ CODE QUALITY STANDARDS:
 - Separate update() and draw() functions clearly
 - Game state object: { state: 'START' | 'PLAYING' | 'GAMEOVER', score: 0, lives: 3 }
 - Restart must fully reset all state — no page reload
-  - Section dividers like // ===== SECTION ===== and // ----- name ----- MUST also
-    be alone on their own line — NEVER put any code after them on the same line
-  - If you write a comment, the VERY NEXT line must be a blank line or actual code,
-    never code on the same line as the comment
 
 
 You MUST use this exact single-file boilerplate to prevent DOM and timing crashes:
@@ -85,34 +91,26 @@ You MUST use this exact single-file boilerplate to prevent DOM and timing crashe
 </head>
 <body>
     <script>
-        // 1. Setup Canvas
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
         canvas.width = 800;
         canvas.height = 600;
         document.body.appendChild(canvas);
 
-        // 2. Input Handling
         const keys = {};
         window.addEventListener('keydown', e => keys[e.code] = true);
         window.addEventListener('keyup', e => keys[e.code] = false);
 
-        // 3. Game State
         let lastTime = 0;
-        // Define your entities, player, enemies, score, etc. here
 
-        // 4. Functions — each on their own line, NEVER after a comment on the same line
         function init() {
-            // Initialize or reset game state here
         }
 
         function update(dt) {
-            // Handle physics, movement, and collisions here. Multiply speeds by dt!
         }
 
         function draw() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            // Render shapes using ctx.fillRect, ctx.arc, etc.
         }
 
         function loop(timestamp) {
@@ -187,14 +185,13 @@ ABSOLUTE RULES — VIOLATION = INSTANT REJECTION:
     gfx.destroy();
     this.player = this.physics.add.sprite(400, 300, 'player');
 
-[R7] COMMENT PLACEMENT — CRITICAL
-  - NEVER place executable code on the same line as a // comment
-  - Comments MUST be on their own separate line, ABOVE the code they describe
-  - ❌ WRONG:  // setup player        this.player = this.physics.add.sprite(400, 300, 'player');
-  - ✅ CORRECT:
-    // setup player
-    this.player = this.physics.add.sprite(400, 300, 'player');
-  - Inline code after // is silently ignored by JavaScript
+[R7] ABSOLUTELY NO COMMENTS ALLOWED — CRISIS LEVEL PRIORITY
+  - You are STRICTLY FORBIDDEN from writing ANY comments in the code.
+  - NO single-line comments (//)
+  - NO multi-line comments (/* */)
+  - NO HTML comments (<!-- -->)
+  - WHY: The streaming output strips newlines. If you write a comment, it breaks the entire game syntax.
+  - Only output executable code, HTML, and CSS.
 
 [R8] NO DUPLICATE FUNCTION OR METHOD NAMES
   - Each method (preload, create, update) must appear EXACTLY ONCE inside the class
@@ -223,16 +220,13 @@ You MUST use this exact single-file boilerplate to prevent crashes:
             constructor() { super('GameScene'); }
 
             preload() {
-                // Generate graphics textures here. NO external images.
             }
 
             create() {
-                // Initialize Physics, Colliders, State, and Input Keys here
                 this.cursors = this.input.keyboard.createCursorKeys();
             }
 
             update(time, delta) {
-                // Handle logic and time-based cooldowns here
             }
         }
 
@@ -254,7 +248,9 @@ CRITICAL LOGIC RULES:
 2. ALWAYS check 'if (object && object.active)' before applying physics.
 3. NEVER use 'group.create(x, y, width, height, color)'. Create shapes with 'this.add.rectangle()', apply physics, then add to group.
 4. NEVER use 'this.input.keyboard.addKey()' inside update(). Define all keys in create().
-5. PARTICLE EMITTER (Phaser 3.60 API — old API is removed):
+5. REASONABLE SPEEDS: Physics velocities MUST be in reasonable pixels per second (e.g., 300, 500). Do NOT use tiny values like 5. 
+6. PADDLES BOUNCE: When a ball hits a paddle, it MUST bounce (setBounce(1) and collide), NOT deduct points or lives. Lives are only lost when objects leave the screen bounds.
+7. PARTICLE EMITTER (Phaser 3.60 API — old API is removed):
    - CORRECT:   this.add.particles(x, y, 'texture', { speed: 100, lifespan: 500, quantity: 5 })
    - WRONG:     this.add.particles('texture').createEmitter({ ... })   ← REMOVED in 3.60
    - For one-shot explosions: const emitter = this.add.particles(x, y, 'texture', { ... , emitting: false });
@@ -311,6 +307,9 @@ export class CoderAgent {
             GAME LOOP (follow step-by-step):
             ${plan.gameLoopDescription}
 
+            NO COMMENTS ALLOWED:
+            You are strictly forbidden from writing any comments (// or /* */) anywhere in the final code. Any comment will break the game.
+
             Output raw HTML only. Start with <!DOCTYPE html>, end with </html>.
             `;
 
@@ -320,7 +319,8 @@ export class CoderAgent {
       json: false,
       stream: true,
       mode: 'BUILD',
-      sessionId: this.sessionId
+      sessionId: this.sessionId,
+      skipCache: !!previousCode
     }) as AsyncGenerator<string>
 
     for await (const chunk of generator) {

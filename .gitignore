@@ -16,3 +16,5 @@ packages/model/types.js
 packages/agents/dist/
 .history/
 packages/controller/dist/
+.turbo/
+packages/model/llm/dist/

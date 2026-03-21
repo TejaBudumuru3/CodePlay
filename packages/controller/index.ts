@@ -72,11 +72,22 @@ export class Controller {
                         type: 'COMPLETED',
                         data: session.code as unknown as BuildResponse
                     }
-                case 'FAILED':
-                    return {
-                        type: 'ERROR',
-                        data: session.error as string
+                case 'FAILED': {
+                    let fallbackStatus = 'INIT';
+                    if (session.clarification) {
+                        const clar = session.clarification as unknown as ClarificationResponse;
+                        fallbackStatus = clar.isSufficient ? 'PLANNING' : 'CLARIFYING';
+                    } else if (session.prompt) {
+                        fallbackStatus = 'INIT';
                     }
+
+                    await prisma.session.update({
+                        where: { id: this.sessionId },
+                        data: { status: fallbackStatus as any, error: null }
+                    });
+                    
+                    return this.start(userMessage);
+                }
 
                 default:
                     return {

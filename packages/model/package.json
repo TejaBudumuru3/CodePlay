@@ -7,6 +7,10 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "tsc"
   },
+  "dependencies": {
+    "db": "*",
+    "llm": "*"
+  },
   "keywords": [],
   "author": "",
   "license": "ISC",
