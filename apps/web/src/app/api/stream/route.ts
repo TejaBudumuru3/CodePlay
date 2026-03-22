@@ -160,7 +160,8 @@ export async function GET(req: NextRequest) {
                                     error: `Code failed due to MAX reviews(${MAX_REVIEWS}) failed`
                                 }
                             })
-                            send("error", { reason: `Code failed due to MAX reviews(${MAX_REVIEWS}) failed`, issues: review.issues })
+                            send("status", { status: "FAILED", attempt: reviewCount, max: MAX_REVIEWS });
+                            send("error", { message: `Code failed due to MAX reviews(${MAX_REVIEWS}) failed`, issues: review.issues })
                             currentStatus = 'FAILED'
                         }
                         else {

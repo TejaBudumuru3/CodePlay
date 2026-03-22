@@ -124,11 +124,11 @@ export default function LandingPage() {
             variants={fadeInUp}
             viewport={{ once: true }}
             transition={{ delay: 0, duration: 0.5 }}
-            className="text-5xl sm:text-6xl md:text-7xl pointer-events-none lg:text-[5.5rem] font-extrabold tracking-tight text-slate-900 leading-[1.05] mb-8"
+            className="text-5xl sm:text-6xl md:text-7xl pointer-events-none lg:text-[5.5rem] font-extrabold tracking-tight text-slate-900 leading-[1.05] mb-6"
           >
             Imagine a game. <br className="hidden sm:block" />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-500 via-blue-500 to-sky-500">
-              World's #1 Game Builder
+              The #1 2D Game Builder
             </span>
           </motion.h1>
 
@@ -136,9 +136,9 @@ export default function LandingPage() {
             variants={fadeInUp}
             viewport={{ once: true }}
             transition={{ delay: 0, duration: 0.5 }}
-            className="text-lg pointer-events-none sm:text-xl lg:text-2xl text-slate-600 max-w-3xl mx-auto mb-12 leading-relaxed font-medium"
+            className="text-lg pointer-events-none sm:text-xl lg:text-2xl text-slate-600 max-w-3xl mx-auto mb-8 leading-relaxed font-medium"
           >
-            Just describe your idea in plain english, and watch our multi-agent architecture write, compile, and render your game right in your browser.
+            Describe your idea, and watch our AI agents instantly build and render your 2D desktop game right in your browser.
           </motion.p>
 
           <motion.div
@@ -192,9 +192,10 @@ export default function LandingPage() {
         >
           <div className="text-center pointer-events-none max-w-3xl mx-auto mb-20">
             <h2 className="text-primary font-bold tracking-wide uppercase text-sm mb-3">Limitless Possibilities</h2>
-            <h3 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-slate-900 mb-6">A Complete Studio, <br />In Your Browser</h3>
-            <p className="text-lg text-slate-600">No downloads. No complicated UI. Just pure creativity backed by cutting-edge artificial intelligence.</p>
+            <h3 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-slate-900 mb-6">A Complete 2D Studio, <br />In Your Browser</h3>
+            <p className="text-lg text-slate-600">No downloads or setup. Pure creativity powered by AI, optimized for 2D desktop games.</p>
           </div>
+
 
           <div className="grid lg:grid-cols-2 gap-16 items-center">
             <div className="order-2 lg:order-1 relative">
@@ -273,7 +274,7 @@ export default function LandingPage() {
           </motion.div>
 
           <motion.div
-            className="grid grid-cols-1 md:grid-cols-3 gap-8 relative max-w-6xl mx-auto"
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 relative max-w-7xl mx-auto"
             variants={staggerContainer}
             initial="initial"
             whileInView="animate"
@@ -324,6 +325,21 @@ export default function LandingPage() {
                 action: "Build Game Engine",
                 actionGradient: "group-hover:from-emerald-400/40 group-hover:to-emerald-500/50",
                 ring: "group-hover:ring-emerald-500/30",
+              },
+              {
+                icon: ShieldCheck,
+                name: "The Reviewer",
+                role: "Quality Assurance",
+                traits: [
+                  { label: "Bug Hunter", value: "Elite" },
+                  { label: "Optimize", value: "Deep" },
+                  { label: "Stability", value: "100%" },
+                ],
+                accent: "from-amber-400/40",
+                iconColor: "text-amber-600",
+                action: "Review & Refine Code",
+                actionGradient: "group-hover:from-amber-400/40 group-hover:to-amber-500/50",
+                ring: "group-hover:ring-amber-500/30",
               },
             ].map(({ icon: Icon, name, role, traits, accent, iconColor, action, actionGradient, ring }) => (
               <motion.div

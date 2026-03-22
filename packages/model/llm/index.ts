@@ -99,13 +99,15 @@ export class LLM {
                                 throw new Error("No content in LLM stream");
                             }
 
-                            await prisma.llmCache.create({
-                                data: {
-                                    promptHash: hashPrompt,
-                                    response: fullRes,
-                                    model: model
-                                }
-                            })
+                            if (!params.skipCache) {
+                                await prisma.llmCache.create({
+                                    data: {
+                                        promptHash: hashPrompt,
+                                        response: fullRes,
+                                        model: model
+                                    }
+                                })
+                            }
 
                             if (params.sessionId && params.mode === 'BUILD') {
                                 await prisma.session.update({
@@ -150,14 +152,15 @@ export class LLM {
                     }
                     console.log("[LLM - Success] Non-streamed content length:", content.length);
                     const parsedResponse = params.json ? JSON.parse(content) : content as T;
-
-                    await prisma.llmCache.create({
-                        data: {
-                            promptHash: hashPrompt,
-                            response: content,
-                            model: model
-                        }
-                    })
+                    if (!params.skipCache) {
+                        await prisma.llmCache.create({
+                            data: {
+                                promptHash: hashPrompt,
+                                response: content,
+                                model: model
+                            }
+                        })
+                    }
 
                     return parsedResponse as T;
 
