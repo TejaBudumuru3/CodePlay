@@ -6,7 +6,8 @@ import { ReviewerAgent } from "@packages/agents/reviewer";
 import { BuildResponse, ClarificationResponse, PlanResponse, ReviewerResponse } from "@packages/model/types";
 import { auth } from "@/auth";
 
-
+export const dynamic = 'force-dynamic';
+export const maxDuration = 300; // Allow long-running operations
 export async function GET(req: NextRequest) {
     const session = await auth();
 
@@ -198,10 +199,11 @@ export async function GET(req: NextRequest) {
     return new Response(stream, {
         headers: {
             'Content-Type': "text/event-stream",
-            'Cache-Control': 'no-cache',
-            'Connection': 'keep-alive'
+            'Cache-Control': 'no-cache, no-transform',
+            'Connection': 'keep-alive',
+            'X-Accel-Buffering': 'no'
         }
-    })
+    });
 
 
 }

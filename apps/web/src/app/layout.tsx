@@ -16,6 +16,9 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "CodePlay",
   description: "Build browser games with AI agents",
+  icons: {
+    icon: '/logo.png'
+  }
 };
 
 export default function RootLayout({
