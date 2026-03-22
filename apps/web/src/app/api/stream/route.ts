@@ -39,6 +39,14 @@ export async function GET(req: NextRequest) {
                 controller.enqueue(encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`));
             };
 
+            // ✅ ADD HEARTBEAT HERE
+            const heartbeat = setInterval(() => {
+                try {
+                    controller.enqueue(encoder.encode(`: ping\n\n`));
+                } catch { }
+            }, 15000);
+
+
             try {
                 const llm = new LLM();
                 const plan = gameSession.plan as unknown as PlanResponse;
@@ -192,6 +200,7 @@ export async function GET(req: NextRequest) {
                 })
             }
             finally {
+                clearInterval(heartbeat);
                 controller.close();
             }
         }
