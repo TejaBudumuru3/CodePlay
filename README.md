@@ -81,6 +81,92 @@ INIT → CLARIFYING → PLANNING → BUILDING → REVIEW → COMPLETED
 
 If the Reviewer returns `FAIL`, the session loops back to `BUILDING` with targeted fix instructions — up to 3 times before accepting the best output.
 
+### Sequence Diagram
+
+The full request lifecycle from user prompt to playable game:
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant UI as Next.js Frontend
+    participant API as API Routes
+    participant Ctrl as Controller
+    participant DB as PostgreSQL
+    participant Clar as Clarifier Agent
+    participant Plan as Planner Agent
+    participant Code as Coder Agent
+    participant Rev as Reviewer Agent
+    participant LLM as OpenRouter API
+
+    User->>UI: "Build a Snake game with power-ups"
+    UI->>API: POST /api/chat {prompt}
+    API->>DB: Create Session (Status: INIT)
+    API->>Ctrl: start(sessionId)
+
+    rect rgb(6, 182, 212, 0.1)
+        Note over Ctrl,Clar: CLARIFICATION PHASE
+        Ctrl->>Clar: clarify(prompt)
+        Clar->>LLM: System prompt + game idea
+        LLM-->>Clar: MCQ questions JSON
+        Clar->>DB: Update Session (Status: CLARIFYING)
+        Clar-->>UI: Display MCQ questions
+        UI-->>User: Show questions with options
+        User->>UI: Select answers (A, B, C, D)
+        UI->>API: POST /api/chat {answers}
+        API->>Ctrl: start(sessionId, answers)
+        Ctrl->>Clar: clarify(answers, history)
+        Clar->>LLM: Synthesize answers
+        LLM-->>Clar: Requirements summary (confidence: 1.0)
+        Clar->>DB: Update Session (Status: PLANNING)
+    end
+
+    rect rgb(59, 130, 246, 0.1)
+        Note over Ctrl,Plan: PLANNING PHASE
+        Ctrl->>Plan: plan(requirements, gameIdea)
+        Plan->>LLM: Requirements + system prompt
+        LLM-->>Plan: Technical blueprint JSON
+        Plan->>DB: Update Session (plan, Status: BUILDING)
+    end
+
+    rect rgb(16, 185, 129, 0.1)
+        Note over Ctrl,Code: BUILD PHASE (SSE Stream)
+        UI->>API: GET /api/stream?sessionId
+        API->>Code: build(plan)
+        Code->>LLM: Blueprint + coder system prompt
+        loop Real-time streaming
+            LLM-->>Code: Code chunks
+            Code-->>UI: SSE: code chunk
+            UI-->>User: Live code + preview update
+        end
+        Code->>DB: Update Session (code, Status: REVIEW)
+    end
+
+    rect rgb(245, 158, 11, 0.1)
+        Note over Ctrl,Rev: REVIEW PHASE (max 3 iterations)
+        API->>Rev: review(plan, code, summary)
+        Rev->>LLM: Code + plan + QA prompt
+        LLM-->>Rev: PASS / FAIL + feedback
+        alt PASS
+            Rev->>DB: Update Session (Status: COMPLETED)
+            API-->>UI: SSE: complete
+            UI-->>User: Playable game rendered
+        else FAIL (attempts < 3)
+            Rev->>DB: Update Session (Status: REBUILD)
+            Rev->>Code: Rebuild with feedback
+            Code->>LLM: Previous code + fix instructions
+            loop Streaming rebuild
+                LLM-->>Code: Fixed code chunks
+                Code-->>UI: SSE: code chunk
+            end
+            Note over Rev: Loop back to review
+        end
+    end
+
+    User->>UI: Download ZIP / View code / Play game
+```
+
+> **Full system architecture diagram** available as a detailed PDF: [`docs/codeplay-flow-diagram.pdf`](./docs/codeplay-flow-diagram.pdf)
+
 ---
 
 ## 🤖 Agent Pipeline
