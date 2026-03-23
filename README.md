@@ -1,162 +1,307 @@
-# Agentic AI Builder
+<div align="center">
 
-A multi-agent system designed to build complete, playable browser games from text prompts using structured reasoning and autonomous code generation.
+# ⚡ CodePlay
+
+### *Turn a game idea into a playable browser game — in minutes.*
+
+[![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Next.js](https://img.shields.io/badge/Next.js_15-000000?style=for-the-badge&logo=next.js&logoColor=white)](https://nextjs.org/)
+[![Prisma](https://img.shields.io/badge/Prisma-2D3748?style=for-the-badge&logo=prisma&logoColor=white)](https://www.prisma.io/)
+[![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)](https://www.docker.com/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](./LICENSE)
+
+</div>
 
 ---
-### Documentation
-- [**Detailed Architecture & DB Schema**](./ARCHITECTURE.md)
+
+## What is CodePlay?
+
+**CodePlay** is an AI-powered multi-agent system that transforms natural language prompts into fully playable 2D browser games. Powered by a sophisticated pipeline of specialized AI agents — **Clarifier**, **Planner**, **Coder**, and **Reviewer** — it autonomously designs, builds, and quality-checks complete games in minutes.
+
+No game development experience required. Describe your idea, answer a few targeted questions, and watch your game come to life in real time.
+
 ---
-### File Structure:
+
+## ✨ Key Features
+
+- **Multi-Agent AI Pipeline** — Four specialized agents work in sequence: Clarifier → Planner → Coder → Reviewer, each with a single, well-defined responsibility
+- **Real-Time Code Streaming** — SSE-based live code generation streams code directly to your browser as it's written
+- **Dual Framework Support** — Generates games in both Vanilla Canvas API and Phaser 3, chosen automatically based on game complexity
+- **Intelligent Clarification** — MCQ-based game design interview builds a confidence score; proceeds only when ≥ 0.8 confidence is reached
+- **Automated Code Review** — Reviewer Agent QA-checks every build and triggers up to 3 review-rebuild iterations if issues are found
+- **LLM Response Caching** — SHA-256 hash-based caching eliminates redundant LLM calls and cuts costs significantly
+- **Live Game Preview** — In-browser iframe rendering alongside syntax-highlighted code, updated in real time
+- **Credit System** — Daily refresh: 5 credits for registered users, 2 for guests — no sign-up required to try
+- **Session History** — All game creation sessions are persisted; revisit and replay any previous game
+- **ZIP Download** — Download the complete self-contained game as a ZIP file
+- **Docker + CI/CD** — Containerized deployment pipeline with GitHub Actions → Oracle Cloud SSH deploy
+
+---
+
+## 🏗️ Architecture Overview
+
+```mermaid
+graph TD
+    User((User)) --> |"Game Idea"| UI[Next.js Frontend]
+    UI --> |"Create Session"| API[API Routes]
+    API --> |"Orchestrate"| Ctrl[Controller]
+    Ctrl --> |"INIT/CLARIFYING"| Clar[Clarifier Agent]
+    Ctrl --> |"PLANNING"| Plan[Planner Agent]
+    Ctrl --> |"BUILDING"| Code[Coder Agent]
+    Ctrl --> |"REVIEW"| Rev[Reviewer Agent]
+
+    Clar --> |"MCQ Questions"| User
+    Clar --> |"Requirements JSON"| DB[(PostgreSQL)]
+    Plan --> |"Technical Blueprint"| DB
+    Code --> |"SSE Stream"| UI
+    Code --> |"Generated Code"| DB
+    Rev --> |"PASS/FAIL"| Ctrl
+    Rev --> |"FAIL + Feedback"| Code
+
+    DB --> |"Cache Check"| Cache[LLM Cache]
+    Ctrl --> |"LLM Calls"| LLM[OpenRouter API]
+
+    style User fill:#6366f1,stroke:#4f46e5,color:#fff
+    style UI fill:#0ea5e9,stroke:#0284c7,color:#fff
+    style Ctrl fill:#8b5cf6,stroke:#7c3aed,color:#fff
+    style Clar fill:#06b6d4,stroke:#0891b2,color:#fff
+    style Plan fill:#3b82f6,stroke:#2563eb,color:#fff
+    style Code fill:#10b981,stroke:#059669,color:#fff
+    style Rev fill:#f59e0b,stroke:#d97706,color:#fff
+    style DB fill:#64748b,stroke:#475569,color:#fff
+    style Cache fill:#94a3b8,stroke:#64748b,color:#fff
+    style LLM fill:#ec4899,stroke:#db2777,color:#fff
 ```
-agentic-ai-builder-1/
+
+The state machine drives the entire session lifecycle:
+
+```
+INIT → CLARIFYING → PLANNING → BUILDING → REVIEW → COMPLETED
+```
+
+If the Reviewer returns `FAIL`, the session loops back to `BUILDING` with targeted fix instructions — up to 3 times before accepting the best output.
+
+---
+
+## 🤖 Agent Pipeline
+
+Each agent is a focused specialist with a single responsibility. Together, they form an autonomous game development team.
+
+| Agent | Role | Input | Output |
+|-------|------|-------|--------|
+| **Clarifier** | Lead Game Designer | Raw natural language game idea | Structured requirements JSON (confidence ≥ 0.8) |
+| **Planner** | Senior Game Architect | Clarified requirements | Technical blueprint: framework, mechanics, controls, assets, game loop |
+| **Coder** | Elite Game Developer | Technical blueprint | Complete single-file HTML/CSS/JS game |
+| **Reviewer** | QA Engineer | Generated code + original plan | `PASS` or `FAIL` with specific, actionable fix instructions |
+
+### How Confidence Works
+
+The Clarifier computes a confidence score based on how well the user's answers cover the essential game design dimensions (genre, mechanics, win/loss conditions, controls, visual style). It continues asking MCQ questions until confidence reaches **0.8**, then hands off to the Planner — ensuring the Coder always receives a complete specification.
+
+---
+
+## 🛠️ Tech Stack
+
+| Layer | Technologies |
+|-------|-------------|
+| **Frontend** | Next.js 15, React 19, TailwindCSS, Framer Motion |
+| **Backend** | Node.js, TypeScript, Turborepo |
+| **Database** | PostgreSQL, Prisma ORM 7, Neon DB |
+| **AI / LLM** | OpenRouter API, multi-model support |
+| **Auth** | NextAuth v5, Google OAuth, Guest Auth |
+| **DevOps** | Docker, GitHub Actions, Oracle Cloud |
+| **Streaming** | Server-Sent Events (SSE) |
+| **UI Extras** | Prism.js (syntax highlighting), JSZip, Lucide Icons |
+
+---
+
+## 📁 Project Structure
+
+```
+CodePlay/
 ├── apps/
-│   └── web/                # Next.js/Frontend (Vercel deployment)
+│   └── web/                    # Next.js 15 frontend (App Router)
+│       └── src/
+│           ├── app/            # Pages: landing, login, builder
+│           ├── components/     # ChatInterface, CodeViewer, GamePreview, …
+│           ├── context/        # GameBuilderContext, CreditsContext
+│           ├── lib/            # Utilities, credit management helpers
+│           └── auth.ts         # NextAuth v5 configuration
 ├── packages/
-│   ├── agents/             # Agent Logic
-│   │   ├── clarifier.ts    # Logic for user requirement gathering
-│   │   ├── planner.ts      # Technical blueprinting (JSON generation)
-│   │   └── coder.ts        # Source code generation (HTML/CSS/JS)
-│   ├── controller/         # Orchestration & State Management
+│   ├── agents/                 # Clarifier, Planner, Coder, Reviewer agents
+│   ├── controller/             # Session orchestrator & state machine
 │   └── model/
-|        ├── db/            # Schema & DB Client (Prisma/PostgreSQL)
-|        └── llm/           # LLM client talks to LLM models (Openrouter.ai free models)
-├── output/                 # Generated game files
-├── main.ts                 # Entry point (CLI)
-├── ARCHITECTURE.md         # Documentation
-├── Dockerfile              # Containerization
-└── package.json            
+│       ├── db/                 # Prisma schema, client, migrations
+│       ├── llm/                # OpenRouter client — caching & retry logic
+│       └── types.ts            # Shared TypeScript types across packages
+├── .github/
+│   └── workflows/              # CI/CD: build → push to GHCR → SSH deploy
+├── Dockerfile                  # Production multi-stage container
+├── main.ts                     # CLI entry point (run without UI)
+└── turbo.json                  # Turborepo pipeline config
 ```
 
-##  How to Run
+---
+
+## 🚀 Getting Started
 
 ### Prerequisites
-- Node.js (v22+)
-- PostgreSQL (or Neon DB)
-- OpenRouter API Key
+
+- **Node.js** 22+
+- **PostgreSQL** (local or [Neon DB](https://neon.tech) for serverless)
+- **OpenRouter API Key** — [get one here](https://openrouter.ai/keys)
+- **Google OAuth Credentials** (optional, for social login)
 
 ### Installation
-1.  **Clone the repository**:
-    ```bash
-    git clone <repository-url>
-    cd agentic-ai-builder
-    ```
 
-2.  **Install dependencies**:
-    ```bash
-    npm install
-    ```
-
-3.  **Environment Setup**:
-    Create a `.env` file in the root directory and add:
-    ```env
-    DATABASE_URL="your-postgresql-url"
-    OPENROUTER_API_KEY="your-api-key"
-    OPENROUTER_MODEL="any-model=from-openrouter"
-    OPENROUTER_MODEL_BUILDER="any-model-from-openrouter"
-
-    # for frontend local run add below variables:
-
-    # === NextAuth ===
-    NEXTAUTH_URL=http://localhost:3000
-    NEXTAUTH_SECRET=""
-    
-    # === Google OAuth ===
-    GOOGLE_CLIENT_ID="google client id"
-    GOOGLE_CLIENT_SECRET="google secrets"
-    ```
-
-4.  **Database Setup**:
-    ```bash
-    npm run db:push
-    npm run db:generate
-    ```
-
-5.  **Start the Agent from CLI**:
-    ```bash
-    npm start
-    ```
-
-6. **Start the Agent from UI(frontend)**:
-    ```bash
-    cd apps\web
-    npm install
-    npm run build
-
-    npm run dev
-    ```
-   
----
-
-##  Agent Architecture
-
-The system uses a **Controller-Agent** architecture to manage the lifecycle of a game's creation.
-
-### 1. Controller (`packages/controller`)
-- Acts as the orchestrator.
-- Manages the session state in the database.
-- Routes user input to the appropriate agent based on the current step.
-
-### 2. Clarifier Agent (`packages/agents/clarifer.ts`)
-- **Objective**: Ensure the game idea is well-defined.
-- **Function**: Analyzes the initial prompt and asks 2-5 targeted questions about mechanics, controls, and win/lose conditions.
-- **Threshold**: Moves to the planning phase once a "confidence" score of 0.8+ is achieved.
-
-### 3. Planner Agent (`packages/agents/planner.ts`)
-- **Objective**: Design the technical blueprint.
-- **Function**: Decides the framework (`vanilla` or `phaser`), defines systems (collision, scoring), and outlines the game loop.
-
-### 4. Coder Agent (`packages/agents/coder.ts`)
-- **Objective**: Generate the source code.
-- **Function**: Produces exactly 3 files: `index.html`, `style.css`, and `game.js`.
-- **Output**: Pure, playable 2D games using geometric shapes (no external assets required).
-
----
-
-##  Trade-offs Made
-
-### 3-File Output Constraint
-- **Why**: Reduced complexity for the LLM. By forcing everything into three standard files, we ensure the game remains portable and avoids build-step failures.
-- **Impact**: Limits very large-scale games, but significantly increases reliability for "one-shot" generation.
-
-### Geometric Assets Only
-- **Why**: Avoids broken image links or the need for an external asset management system.
-- **Impact**: Visuals are retro-style (rectangles, circles), but the game is guaranteed to work immediately.
-
-### Sequential Agent Flow
-- **Why**: Ensures logical progression. A coder shouldn't start before the planner, and the planner shouldn't start without clarity.
-- **Impact**: Slightly slower initial process (due to clarifying questions), but results in much higher quality output.
-
----
-
-##  Improvements with More Time
-
-1.  **Iterative Refinement (QA Agent)**: Implement a "Reviewer" agent that runs the generated code and provides feedback to the Coder Agent to fix bugs automatically.
-2.  **Asset Generation**: Integrate with Dall-E or Midjourney APIs to generate actual sprite sheets instead of just using shapes.
-3.  **Advanced Frameworks**: Add support for Three.js for 3D games or React for UI-heavy games.
-
----
-
-##  Docker Build and Run
-
-### Build the Image
 ```bash
-docker build -t agentic-ai-builder .
+# 1. Clone the repository
+git clone https://github.com/tejabudumuru3/CodePlay.git
+cd CodePlay
+
+# 2. Install dependencies (all workspaces)
+npm install
+
+# 3. Copy the environment template and fill in your values
+cp .env.example .env
 ```
 
-### Run the Container
-Since the agent is interactive (CLI), use the following command to run it:
-```bash
-# for powershell: 
-docker run -it --env-file .env -v "${PWD}/output:/app/output" agentic-ai-builder
+### Environment Variables
 
-# for CMD:
+Create a `.env` file in the project root:
 
-docker run -it --env-file .env -v "%cd%/output:/app/output" agentic-ai-builder
+```env
+# Database
+DATABASE_URL="postgresql://user:password@localhost:5432/codeplay"
 
-# for MACos/Linux:
+# NextAuth
+NEXTAUTH_SECRET="your-nextauth-secret-here"
+NEXTAUTH_URL="http://localhost:3000"
 
-docker run -it --env-file .env -v "$(pwd)/output:/app/output" agentic-ai-builder
+# Google OAuth (optional)
+GOOGLE_CLIENT_ID="your-google-client-id"
+GOOGLE_CLIENT_SECRET="your-google-client-secret"
 
+# OpenRouter
+OPENROUTER_API_KEY="your-openrouter-api-key"
+
+# App
+NEXT_PUBLIC_APP_URL="http://localhost:3000"
 ```
-> [!NOTE]
-> Ensure your `.env` file contains a valid `DATABASE_URL`, `OPENROUTER_API_KEY`, `OPENROUTER_MODEL`, `OPENROUTER_MODEL_BUILDER` that is accessible from within the container (e.g., a cloud-hosted Neon DB).
+
+### Database Setup
+
+```bash
+# Push schema to your database and generate Prisma client
+npx prisma db push
+
+# (Optional) Seed with initial data
+npx prisma db seed
+```
+
+### Running Locally
+
+**Web UI (recommended):**
+
+```bash
+npm run dev
+# App available at http://localhost:3000
+```
+
+**CLI mode** (headless game generation):
+
+```bash
+npx ts-node main.ts
+```
+
+### Docker Deployment
+
+```bash
+# Build the production image
+docker build -t codeplay .
+
+# Run the container
+docker run -p 3000:3000 --env-file .env codeplay
+```
+
+Or use the pre-built image from GitHub Container Registry:
+
+```bash
+docker pull ghcr.io/tejabudumuru3/codeplay:latest
+docker run -p 3000:3000 --env-file .env ghcr.io/tejabudumuru3/codeplay:latest
+```
+
+---
+
+## 🎮 How It Works
+
+1. **Describe your game** — Enter any game idea in plain English ("a snake game where apples give power-ups")
+2. **Clarifier Agent interviews you** — Asks targeted MCQ questions about mechanics, controls, difficulty, and visual style
+3. **Confidence threshold reached** — Once the Clarifier is ≥ 80% confident in the spec, the Planner takes over
+4. **Planner creates a blueprint** — Selects framework (Vanilla Canvas or Phaser 3), defines mechanics, systems, assets, and the full game loop
+5. **Coder generates your game** — Streams complete HTML/CSS/JS to your browser in real time; you watch the code appear live
+6. **Reviewer QA-checks the build** — Validates against the plan; if issues are found, triggers a targeted rebuild (up to 3 passes)
+7. **Play your game** — The finished game renders directly in your browser. Download it as a ZIP to keep forever.
+
+---
+
+## 🧠 Design Decisions
+
+### Why a Multi-Agent Pipeline Instead of One Big Prompt?
+
+Splitting responsibilities across four specialized agents dramatically improves output quality. Each agent has a focused context window, purpose-built system prompt, and a clear contract with the next stage. A single monolithic prompt trying to clarify, plan, code, and review simultaneously produces inconsistent results — especially for complex game logic.
+
+### Why SSE Instead of WebSockets?
+
+Server-Sent Events are unidirectional (server → client), which is all that's needed for streaming code generation. SSE requires no upgrade handshake, works over standard HTTP/2, and is simpler to deploy behind reverse proxies and CDNs than WebSockets. The tradeoff is that SSE is one-way, but all user interactions (chat messages, navigation) already go through the standard REST API.
+
+### Why SHA-256 Caching for LLM Calls?
+
+LLM inference is expensive and deterministic for identical inputs. By hashing the exact prompt + model + parameters, CodePlay avoids re-calling the API for repeated or near-identical game ideas. This is particularly valuable during development and for common game templates (e.g., "simple snake game") that many users request.
+
+### Why OpenRouter Instead of a Single LLM Provider?
+
+OpenRouter provides a unified API across dozens of models (GPT-4o, Claude, Gemini, Llama, Mistral, etc.). This means CodePlay can route different agents to the best model for each task — a cheaper model for clarification questions, a stronger model for code generation — and switch providers without changing application code.
+
+### Why Single-File HTML Output?
+
+Generating a single self-contained `index.html` with all CSS and JavaScript inlined makes games trivially portable. Users can download, share, and host their game anywhere without a build step, Node.js, or any dependencies. The iframe `srcdoc` injection in the preview panel works natively with this format.
+
+---
+
+## 🗺️ Roadmap
+
+| Status | Feature |
+|--------|---------|
+| ✅ Done | Multi-agent pipeline (Clarifier → Planner → Coder → Reviewer) |
+| ✅ Done | Real-time SSE code streaming |
+| ✅ Done | Dual framework support (Vanilla Canvas + Phaser 3) |
+| ✅ Done | LLM response caching |
+| ✅ Done | Credit system with guest support |
+| ✅ Done | Docker + GitHub Actions CI/CD |
+| 🔄 Planned | Game gallery — browse and remix community-generated games |
+| 🔄 Planned | Iterative editing — modify an existing game with follow-up prompts |
+| 🔄 Planned | Multi-file project output (separate HTML/CSS/JS assets) |
+| 🔄 Planned | Custom model selection per agent in the UI |
+| 🔄 Planned | Multiplayer game support |
+| 🔄 Planned | Export to itch.io / GameJolt directly |
+
+---
+
+## 📄 License
+
+This project is licensed under the [MIT License](./LICENSE).
+
+---
+
+## 🔗 Connect
+
+Built by [@tejabudumuru3](https://github.com/tejabudumuru3)
+
+---
+
+<div align="center">
+
+*If CodePlay saved you time or sparked an idea, consider giving it a ⭐*
+
+</div>
