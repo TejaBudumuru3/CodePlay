@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@packages/model/db/client";
 import { Controller } from "@packages/controller/index";
+import { consumeCredit } from "@/lib/credits";
+import crypto from "crypto";
 
 export async function POST(req: NextRequest) {
   try {
@@ -18,14 +20,23 @@ export async function POST(req: NextRequest) {
       prompt?: string;
     };
 
+    const isGuest = session.user.email === "guestuser@gmail.com";
+    const actualUserId = isGuest ? null : userId;
+    let deviceId = req.cookies.get("guest_device_id")?.value;
+    let newDeviceId = false;
+
+    if (isGuest && !deviceId) {
+      deviceId = crypto.randomUUID();
+      newDeviceId = true;
+    }
+
     // New game flow — create session and start
     if (!sessionId && prompt) {
-      // Guest mode: delete previous sessions to enforce single-slot
-      // if (session.user.email === "guestuser@gmail.com") {
-      //   await prisma.session.deleteMany({
-      //     where: { userId },
-      //   });
-      // }
+      const creditStatus = await consumeCredit(actualUserId, deviceId);
+      
+      if (!creditStatus.allowed) {
+        return NextResponse.json({ error: "Insufficient credits. Please try again tomorrow." }, { status: 403 });
+      }
 
       const newSession = await prisma.session.create({
         data: {
@@ -38,11 +49,17 @@ export async function POST(req: NextRequest) {
       const controller = new Controller(newSession.id);
       const result = await controller.start();
 
-      return NextResponse.json({
+      const response = NextResponse.json({
         type: result.type,
         data: result.data,
         sessionId: newSession.id,
       });
+
+      if (newDeviceId && deviceId) {
+        response.cookies.set("guest_device_id", deviceId, { maxAge: 60 * 60 * 24 * 365, httpOnly: true });
+      }
+
+      return response;
     }
 
     // Existing game flow — continue session

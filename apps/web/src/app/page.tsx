@@ -164,6 +164,11 @@ export default function LandingPage() {
             </Link>
           </motion.div>
 
+          {/* Daily Credits Marketing Text */}
+          <motion.div variants={fadeInUp} className="mt-8 text-sm font-medium text-slate-500 max-w-lg mx-auto pointer-events-none">
+            Refreshed Daily: <span className="text-indigo-500 font-bold">5 free credits</span> for logged-in users, or <span className="text-slate-600 font-semibold">2 credits</span> as a guest! Every game generation consumes 1 credit.
+          </motion.div>
+
           {/* Social Proof Placeholder */}
           <motion.div
             variants={fadeInUp}
@@ -414,6 +419,7 @@ export default function LandingPage() {
             </Link>
           </div>
           <p className="mt-8 text-sm text-slate-400 font-medium">No credit card required. Free tier includes Gemini 3.1 Pro access.</p>
+          <p className="mt-3 text-sm text-slate-400 font-medium">Guests receive 2 free credits daily, logged in users receive 5.</p>
         </motion.div>
       </section>
 

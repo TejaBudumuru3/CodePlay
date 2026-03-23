@@ -25,14 +25,22 @@ enum status {
 }
 
 model User {
-  id            String    @id @default(cuid())
-  name          String?
-  email         String    @unique
-  emailVerified DateTime?
-  image         String?
-  createdAt     DateTime  @default(now())
-  accounts      Account[]
-  sessions      Session[]
+  id                String    @id @default(cuid())
+  name              String?
+  email             String    @unique
+  emailVerified     DateTime?
+  image             String?
+  createdAt         DateTime  @default(now())
+  credits           Int       @default(5)
+  lastCreditResetAt DateTime  @default(now())
+  accounts          Account[]
+  sessions          Session[]
+}
+
+model GuestDevice {
+  id                String    @id
+  credits           Int       @default(2)
+  lastCreditResetAt DateTime  @default(now())
 }
 
 model Account {

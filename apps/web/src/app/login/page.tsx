@@ -115,9 +115,14 @@ function LoginContent() {
           </div>
 
           {/* Footer note */}
-          <p className="text-xs text-muted-foreground/70 text-center mt-7">
-            Guest mode saves only your latest game. Sign in to keep history.
-          </p>
+          <div className="text-xs text-muted-foreground/80 text-center mt-7 space-y-2 border-t border-border/40 pt-5">
+            <p>
+              🎁 <span className="font-semibold text-slate-700">Daily Free Credits:</span> Guests get 2 credits, Registered users get 5!
+            </p>
+            <p className="opacity-80">
+              Guest mode saves only your latest game. Sign in to keep history.
+            </p>
+          </div>
         </div>
       </div>
     </div>

@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import { AnimatePresence, motion } from "framer-motion";
 import { signOut, useSession } from "next-auth/react";
 import { ClarificationResponse, MCQQuestion } from "@packages/model/types";
+import { useCredits } from "@/context/CreditsContext";
 
 export default function ChatInterface({
   onToggleHistory,
@@ -28,6 +29,7 @@ export default function ChatInterface({
     reviewCount,
     plan,
   } = useGameBuilder();
+  const { credits, isLoading: isCreditsLoading, decrementCredits } = useCredits();
 
   const [input, setInput] = useState("");
   const [mcqselection, setMcqSelection] = useState<Record<number, string>>({});
@@ -146,16 +148,20 @@ export default function ChatInterface({
     setInput("");
 
     if (status === "IDLE") {
+      if (credits <= 0 && !isCreditsLoading) return;
+      decrementCredits();
       await startNewGame(trimmed);
     } else if (status === "CLARIFYING") {
       await answerClarification(trimmed);
     }
   };
 
-  const canSendMessage = status === "IDLE";
+  const isOutOfCredits = status === "IDLE" && credits <= 0 && !isCreditsLoading;
+  const canSendMessage = (status === "IDLE" && credits > 0) || status === "CLARIFYING";
 
   const getPlaceholder = () => {
-    if (isLoading) return "Analyzing data, please wait...";
+    if (isLoading || isCreditsLoading) return "Analyzing data, please wait...";
+    if (isOutOfCredits) return "Out of credits! Check back tomorrow.";
     if (status === "IDLE") return "Ask me anything...";
     if (status === "CLARIFYING") return "Answer the questions above...";
     if (status === "COMPLETED") return "Game complete! Start a new game.";
@@ -395,7 +401,7 @@ export default function ChatInterface({
             <div className="flex flex-wrap items-center justify-end px-3 pb-2 gap-2">
               <button
                 type="submit"
-                disabled={!input.trim() || !canSendMessage || isLoading}
+                disabled={!input.trim() || !canSendMessage || isLoading || isOutOfCredits}
                 className={cn(
                   "flex items-center gap-2 px-6 p-2.5 rounded-full text-[13px] font-bold transition-all duration-300",
                   "bg-gradient-to-r from-indigo-500 to-blue-600 text-white shadow-[0_4px_14px_rgba(99,102,241,0.3)]",

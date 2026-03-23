@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { GameBuilderProvider, useGameBuilder } from "@/context/GameBuilderContext";
-import { MessageSquare, Code2, Play, PanelRightClose, PanelRightOpen } from "lucide-react";
+import { CreditsProvider, useCredits } from "@/context/CreditsContext";
+import { MessageSquare, Code2, Play, PanelRightClose, PanelRightOpen, Coins } from "lucide-react";
 import SessionHistory from "@/components/SessionHistory";
 import ChatInterface from "@/components/ChatInterface";
 import CodeViewer from "@/components/CodeViewer";
@@ -21,6 +22,8 @@ function BuilderLayout() {
   const { data: session } = useSession();
   const [activeTab, setActiveTab] = useState<MobileTab>("chat");
   const [showHistoryPanel, setShowHistoryPanel] = useState(false);
+  const [showCredits, setShowCredits] = useState(false);
+  const { credits, maxCredits, isGuest, isLoading } = useCredits();
 
   const tabs: { id: MobileTab; label: string; icon: typeof MessageSquare }[] = [
     { id: "chat", label: "Chat", icon: MessageSquare },
@@ -66,8 +69,19 @@ function BuilderLayout() {
         </div>
 
         {/* Bottom User Actions */}
-        <div className="flex flex-col gap-4 items-center shrink-0 w-full mt-auto">
-          <div className="w-10 h-10 rounded-full bg-slate-100 border-2 border-white shadow-sm flex items-center justify-center cursor-pointer hover:bg-slate-200 transition-colors overflow-hidden">
+        <div className="flex flex-col gap-4 items-center shrink-0 w-full mt-auto relative">
+          {showCredits && (
+            <div className="absolute bottom-full left-14 mb-2 p-3 bg-white shadow-xl border border-slate-200 rounded-xl w-48 z-50 animate-fade-in text-center flex flex-col items-center">
+              <Coins className="w-6 h-6 text-amber-500 mb-1" />
+              <h4 className="font-bold text-slate-800 text-sm">{isGuest ? "Guest Credits" : "Daily Credits"}</h4>
+              <p className="text-2xl font-black text-indigo-600 my-1">{isLoading ? "..." : credits} <span className="text-sm text-slate-400 font-medium">/ {maxCredits}</span></p>
+              <p className="text-[10px] text-slate-500 font-medium uppercase tracking-wider">Refreshes at midnight</p>
+            </div>
+          )}
+
+          <div 
+            onClick={() => setShowCredits(!showCredits)}
+            className="w-10 h-10 rounded-full bg-slate-100 border-2 border-white shadow-sm flex items-center justify-center cursor-pointer hover:bg-slate-200 transition-colors overflow-hidden">
             {session?.user?.image ? (
               <img src={session.user.image} alt="User" className="w-full h-full object-cover" />
             ) : (
@@ -149,8 +163,10 @@ function BuilderLayout() {
 
 export default function BuilderPage() {
   return (
-    <GameBuilderProvider>
-      <BuilderLayout />
-    </GameBuilderProvider>
+    <CreditsProvider>
+      <GameBuilderProvider>
+        <BuilderLayout />
+      </GameBuilderProvider>
+    </CreditsProvider>
   );
 }
