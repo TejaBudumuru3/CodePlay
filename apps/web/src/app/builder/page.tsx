@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { GameBuilderProvider, useGameBuilder } from "@/context/GameBuilderContext";
 import { CreditsProvider, useCredits } from "@/context/CreditsContext";
 import { MessageSquare, Code2, Play, PanelRightClose, PanelRightOpen, Coins } from "lucide-react";
@@ -20,10 +20,21 @@ import Link from "next/link";
 
 function BuilderLayout() {
   const { data: session } = useSession();
+  const { status } = useGameBuilder();
   const [activeTab, setActiveTab] = useState<MobileTab>("chat");
   const [showHistoryPanel, setShowHistoryPanel] = useState(false);
   const [showCredits, setShowCredits] = useState(false);
   const { credits, maxCredits, isGuest, isLoading } = useCredits();
+
+  useEffect(() => {
+    if (status === "BUILDING") {
+      setActiveTab("code");
+    } else if (status === "COMPLETED") {
+      setActiveTab("preview");
+    } else if (status === "CLARIFYING" || status === "PLANNING" || status === "IDLE" || status === "FAILED" || status === "REVIEW" || status === "REBUILD") {
+      setActiveTab("chat");
+    }
+  }, [status]);
 
   const tabs: { id: MobileTab; label: string; icon: typeof MessageSquare }[] = [
     { id: "chat", label: "Chat", icon: MessageSquare },

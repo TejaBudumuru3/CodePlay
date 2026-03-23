@@ -8,7 +8,7 @@ import Prism from "prismjs";
 import "prismjs/components/prism-markup";
 import "prismjs/components/prism-css";
 import "prismjs/components/prism-javascript";
-import "prismjs/themes/prism-tomorrow.css";
+import "prismjs/themes/prism.css";
 
 export default function CodeViewer() {
   const { code, plan, status, streamingCode } = useGameBuilder();
@@ -133,7 +133,7 @@ export default function CodeViewer() {
         </div>
 
         <div className="flex-1 overflow-auto p-2">
-          <pre className="bg-white min-h-full text-[12px] text-slate-700 whitespace-pre-wrap break-all font-mono leading-relaxed p-4">
+          <pre className="bg-slate-50 border border-slate-100/50 rounded-xl min-h-full text-[12px] text-slate-800 whitespace-pre-wrap break-all font-mono leading-relaxed p-4 shadow-inner">
             {streamingCode}
             <div ref={streamEndRef} />
           </pre>
@@ -199,11 +199,10 @@ export default function CodeViewer() {
       {/* Code display */}
       <div className="flex-1 overflow-auto p-2">
         {(activeFile || singleFileCode) && (
-          <pre className=" bg-white min-h-full">
-
+          <pre className="bg-slate-50 border border-slate-100/50 rounded-xl min-h-full shadow-inner p-4 text-[12px]">
             <code
               ref={codeRef}
-              className={`language-${isMultipleFiles && activeFile ? getLanguage(activeFile?.filename) : 'markup'} border-none bg-white`}
+              className={`language-${isMultipleFiles && activeFile ? getLanguage(activeFile?.filename) : 'markup'} !bg-transparent`}
             >
               {isMultipleFiles ? activeFile?.content : singleFileCode}
             </code>

@@ -275,6 +275,19 @@ export class CoderAgent {
 
     const systemPrompt = plan.framework === 'vanilla' ? SYSTEM_PROMPT_VANILLA : SYSTEM_PROMPT_PHASER;
 
+    const mobileOverride = plan.platform === 'mobile' ? `
+    
+    CRITICAL MOBILE PLATFORM OVERRIDE:
+    - This is a MOBILE game. The user DOES NOT have a physical keyboard.
+    - STRICTLY FORBIDDEN: Do not use 'keydown', 'keyup', or 'keyboard.createCursorKeys()'.
+    - You MUST implement on-screen touch controls (Virtual Joysticks or Action Buttons).
+    - For Vanilla JS: Create absolutely-positioned translucent HTML buttons over the canvas and use 'pointerdown' / 'pointerup' events.
+    - For Phaser 3: Draw interactive shapes on the UI layer with '.setInteractive()' and use 'pointerdown' / 'pointerup', or use standard pointer events.
+    - Ensure the canvas handles mobile scaling appropriately.
+    ` : '';
+
+    const finalSystemPrompt = systemPrompt + mobileOverride;
+
     let prompt = `
             ${rewritePrompt && previousCode ? `
             ⚠️ REWRITE REQUEST — Your previous code FAILED review.
@@ -315,7 +328,7 @@ export class CoderAgent {
 
     const generator = await this.llm.generate<BuildResponse>({
       prompt: prompt,
-      system: systemPrompt,
+      system: finalSystemPrompt,
       json: false,
       stream: true,
       mode: 'BUILD',

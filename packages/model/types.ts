@@ -27,6 +27,7 @@ export interface PlanResponse {
     title: string;
     description: string;
     framework: "vanilla" | "phaser";
+    platform: "desktop" | "mobile";
     mechanics: { name: string; description: string }[];
     controls: { input: string; action: string }[];
     systems: string[];

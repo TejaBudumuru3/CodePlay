@@ -22,6 +22,13 @@ Use "phaser" for:
 - Group-based collision management
 
 ═══════════════════════════════════════════
+PLATFORM DECISION:
+═══════════════════════════════════════════
+Analyze the user's request.
+- Use "mobile" IF the user explicitly asked for a mobile game, or the game is typically a tap/swipe mobile-first game.
+- Use "desktop" IF the user asked for a PC game, or implies keyboard/WASD/mouse controls.
+
+═══════════════════════════════════════════
 SCOPE RULES — ABSOLUTE:
 ═══════════════════════════════════════════
 1. MAXIMUM 4 core mechanics — strip everything else
@@ -53,6 +60,7 @@ OUTPUT FORMAT — STRICT JSON MATCHING THIS EXACT STRUCTURE:
   "title": "Game Title",
   "description": "1-2 sentence description of the core experience",
   "framework": "vanilla" or "phaser",
+  "platform": "desktop" or "mobile",
   "mechanics": [
     { "name": "mechanic name", "description": "exact behavior — no ambiguity" }
   ],

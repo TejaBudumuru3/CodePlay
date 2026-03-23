@@ -14,16 +14,52 @@ import {
   Play,
   ArrowRight,
   ShieldCheck,
+  Check,
   Globe,
   Share2,
   Bookmark,
   Star,
   Layers,
-  Cpu
+  Cpu,
+  Linkedin,
+  Github,
+  Mail,
+  Rocket,
+  Ghost,
+  Sword,
+  Terminal
 } from "lucide-react";
 import Image from "next/image";
 import { useSession } from "next-auth/react";
 import { motion } from "framer-motion";
+
+const AnimatedText = ({ text, highlightStart = -1, delayOffset = 0 }: { text: string; highlightStart?: number; delayOffset?: number }) => {
+  let charIndex = 0;
+  return (
+    <>
+      {text.split(" ").map((word, wordIdx, array) => (
+        <span key={wordIdx} className="inline-block whitespace-nowrap">
+          {word.split("").map((char, charIdx) => {
+            const currentIdx = charIndex++;
+            const isHighlighted = highlightStart !== -1 && currentIdx >= highlightStart;
+            return (
+              <motion.span
+                key={charIdx}
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.4, delay: delayOffset + currentIdx * 0.04 }}
+                className={`inline-block ${isHighlighted ? "text-primary" : ""}`}
+              >
+                {char}
+              </motion.span>
+            );
+          })}
+          {wordIdx !== array.length - 1 && <span className="inline-block w-[0.25em]" />}
+        </span>
+      ))}
+    </>
+  );
+};
 
 const fadeInUp = {
   initial: { opacity: 0, y: 30 },
@@ -80,110 +116,168 @@ export default function LandingPage() {
       </header>
 
       {/* ═══ Hero Section ═══ */}
-      <section className="relative pt-20 pb-20 sm:pt-48 sm:pb-32 lg:pt-25 pointer-default lg:pb-20 px-4 overflow-hidden mesh-gradient">
-        {/* Floating decorative elements */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none ">
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 2, delay: 0.6 }}
-            className="absolute top-20 left-[10%] w-72 h-72 bg-indigo-400/10 rounded-full blur-3xl animate-float"
-          />
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 2, delay: 0.5 }}
-            className="absolute bottom-40 right-[15%] w-96 h-96 bg-blue-400/10 rounded-full blur-3xl animate-float-slow"
-          />
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 2, delay: 1 }}
-            className="absolute bottom-20 left-[40%] w-80 h-80 bg-violet-400/10 rounded-full blur-3xl animate-float-slow"
-          />
-        </div>
+      <section className="relative min-h-[100dvh] lg:h-[100dvh] pt-[100px] pb-10 lg:pt-[80px] lg:pb-6 px-4 lg:px-8 max-w-7xl mx-auto flex flex-col justify-center overflow-hidden">
+        <div className="w-full h-auto lg:h-full lg:max-h-[100%] bg-slate-50 rounded-[2.5rem] p-6 py-12 sm:p-10 lg:p-16 flex flex-col lg:flex-row items-center gap-8 lg:gap-12 xl:gap-12 relative shadow-[0_8px_30px_rgb(0,0,0,0.3)] border border-slate-200/50 overflow-hidden">
 
-        <motion.div
-          className="relative max-w-5xl mx-auto text-center z-10"
-          variants={staggerContainer}
-          initial="initial"
-          animate="animate"
-        >
-          {/* Badge */}
-          <motion.div
-            variants={fadeInUp}
-            viewport={{ once: true }}
-            transition={{ delay: 0, duration: 0.5 }}
-            className="inline-flex pointer-events-none items-center gap-2 px-4 py-2 rounded-full border border-primary/20 bg-primary/5 text-xs text-primary font-bold tracking-wide uppercase mb-8 shadow-sm"
-          >
-            <Sparkles className="w-3.5 h-3.5" />
-            AI-Powered Game Generation
-          </motion.div>
-
-          <motion.h1
-            variants={fadeInUp}
-            viewport={{ once: true }}
-            transition={{ delay: 0, duration: 0.5 }}
-            className="text-5xl sm:text-6xl md:text-7xl pointer-events-none lg:text-[5.5rem] font-extrabold tracking-tight text-slate-900 leading-[1.05] mb-6"
-          >
-            Imagine a game. <br className="hidden sm:block" />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-500 via-blue-500 to-sky-500">
-              The #1 2D Game Builder
-            </span>
-          </motion.h1>
-
-          <motion.p
-            variants={fadeInUp}
-            viewport={{ once: true }}
-            transition={{ delay: 0, duration: 0.5 }}
-            className="text-lg pointer-events-none sm:text-xl lg:text-2xl text-slate-600 max-w-3xl mx-auto mb-8 leading-relaxed font-medium"
-          >
-            Describe your idea, and watch our AI agents instantly build and render your 2D desktop game right in your browser.
-          </motion.p>
-
-          <motion.div
-            variants={fadeInUp}
-            className="flex flex-col sm:flex-row items-center justify-center gap-4"
-          >
-            <Link
-              href={ctaHref}
-              className="inline-flex items-center gap-2.5 px-8 py-4 rounded-full font-bold text-base transition-all duration-300
-                bg-gradient-to-r from-indigo-600 to-blue-700 text-white
-                shadow-xl shadow-indigo-500/25 hover:shadow-indigo-500/40 hover:-translate-y-1 active:scale-[0.98]"
+          {/* Left Content */}
+          <div className="w-full cursor-default lg:w-[55%] xl:w-1/2 flex flex-col justify-center mt-4 lg:mt-15 z-10 shrink-0">
+            <motion.div
+              variants={fadeInUp}
+              initial="initial"
+              animate="animate"
+              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-200/50 text-xs font-semibold text-slate-700 mb-6 w-fit"
             >
-              <Play className="w-5 h-5 fill-current" />
-              Start Creating for Free
-            </Link>
-            <Link
-              href="#how-it-works"
-              className="flex items-center gap-2.5 px-8 py-4 rounded-full scroll-smooth font-bold text-base transition-all duration-300
-                bg-white border-2 border-slate-200 text-slate-700
-                hover:border-slate-300 hover:bg-slate-50 hover:-translate-y-1 active:scale-[0.98] shadow-sm"
+              <span className="bg-slate-800 text-white px-2.5 py-0.5 rounded-full text-[10px] uppercase tracking-wider">✦</span>
+              From prompt to playable in minutes <ArrowRight className="w-3 h-3 ml-1" />
+            </motion.div>
+
+            <h1 className="text-4xl sm:text-5xl lg:text-5xl xl:text-6xl font-extrabold text-slate-800 tracking-tight leading-[1.1] mb-6 block">
+              <AnimatedText text="Build Your Game" />
+              <br className="hidden lg:block" />
+              <span className="inline-block lg:hidden">&nbsp;</span>
+              <AnimatedText text="Faster with CodePlay" highlightStart={12} delayOffset={15 * 0.04} />
+            </h1>
+
+            <motion.p
+              initial={{ opacity: 0, x: -50 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.6, delay: 1 }}
+              className="text-slate-500 text-base sm:text-lg max-w-xl mb-8 leading-relaxed font-medium"
             >
-              See How It Works
-            </Link>
-          </motion.div>
+              Speed up your game build with our ultimate AI agents. Enjoy high-quality, single-file HTML5 games for a seamless, stunning experience.
+            </motion.p>
 
-          {/* Daily Credits Marketing Text */}
-          <motion.div variants={fadeInUp} className="mt-8 text-sm font-medium text-slate-500 max-w-lg mx-auto pointer-events-none">
-            Refreshed Daily: <span className="text-indigo-500 font-bold">5 free credits</span> for logged-in users, or <span className="text-slate-600 font-semibold">2 credits</span> as a guest! Every game generation consumes 1 credit.
-          </motion.div>
+            <motion.div
+              initial={{ opacity: 0, y: 30, scale: 0.8 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              transition={{ duration: 0.5, delay: 1.4, type: "spring", stiffness: 150 }}
+              className="flex flex-wrap items-center gap-4 mb-8"
+            >
+              <Link
+                href={ctaHref}
+                className="flex items-center gap-2 px-6 py-3.5 bg-white text-slate-800 rounded-full font-bold shadow-sm border border-slate-200 hover:shadow-md hover:-translate-y-0.5 delay-100 duration-600 transition-all text-sm sm:text-base"
+              >
+                Get it now <ArrowRight className="w-4 h-4" />
+              </Link>
+              <Link
+                href="#how-it-works"
+                className="flex items-center gap-2 px-6 py-3.5 bg-slate-800 text-white rounded-full font-bold shadow-md hover:bg-slate-700 hover:-translate-y-0.5 delay-100 transition-all text-sm sm:text-base"
+              >
+                Learn more
+              </Link>
+            </motion.div>
 
-          {/* Social Proof Placeholder */}
-          <motion.div
-            variants={fadeInUp}
-            className="mt-16 pt-10 border-t border-slate-200/60"
-          >
-            <p className="text-sm pointer-events-none font-semibold text-slate-400 uppercase tracking-widest mb-6">Trusted by creators worldwide</p>
-            <div className="flex justify-center gap-8 opacity-50 grayscale hover:grayscale-0 transition-all duration-500">
-              {/* Mock logos */}
-              <Globe className="w-8 h-8 text-slate-800" />
-              <Code2 className="w-8 h-8 text-slate-800" />
-              <Gamepad2 className="w-8 h-8 text-slate-800" />
-              <Zap className="w-8 h-8 text-slate-800" />
+            {/* Daily Credits Marketing Text */}
+            <motion.div variants={fadeInUp} initial="initial" animate="animate" transition={{ delay: 0.4 }} className="text-xs font-medium text-slate-500 max-w-md hidden sm:block">
+              <span className="text-primary font-bold">Daily Free Credits:</span> 5 for logged-in users, 2 as a guest!
+            </motion.div>
+          </div>
+
+          {/* Right Content / Game Cards Graphic */}
+          <div className="hidden lg:flex w-full lg:w-[45%] xl:w-1/2 relative h-[450px] items-center justify-center shrink-0">
+            <div className="relative w-[380px] h-[380px] flex items-center justify-center scale-[0.8] xl:scale-100 origin-center">
+
+              {/* Orbit ring */}
+              <div className="absolute inset-0 rounded-full border border-white/5" />
+              <div className="absolute inset-[15%] rounded-full border border-white/5 border-dashed" />
+
+              {/* Center game card */}
+              <motion.div
+                animate={{ y: [-4, 4, -4] }}
+                transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
+                className="relative z-10 w-[110px] sm:w-[140px] aspect-square rounded-3xl bg-gradient-to-br from-indigo-950 to-[#0D1117] border border-indigo-500/40 shadow-[0_0_60px_rgba(99,102,241,0.35)] flex flex-col items-center justify-center"
+              >
+                <Terminal className="w-10 h-10 sm:w-12 sm:h-12 text-indigo-400 mb-2 drop-shadow-[0_0_8px_rgba(99,102,241,0.8)]" />
+                <span className="text-[8px] font-black text-indigo-300 uppercase tracking-widest text-center leading-tight">Game</span>
+                <motion.div
+                  className="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-green-500 border-2 border-[#05071A] flex items-center justify-center"
+                  animate={{ scale: [1, 1.3, 1] }}
+                  transition={{ repeat: Infinity, duration: 2 }}
+                >
+                  <span className="text-[6px] text-white font-black">✓</span>
+                </motion.div>
+              </motion.div>
+
+              {/* Clarifier — top */}
+              <motion.div
+                animate={{ rotate: [0, 360] }}
+                transition={{ repeat: Infinity, duration: 20, ease: "linear" }}
+                className="absolute inset-0"
+                style={{ transformOrigin: "center" }}
+              >
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2">
+                  <motion.div
+                    animate={{ rotate: [360, 0] }}
+                    transition={{ repeat: Infinity, duration: 20, ease: "linear" }}
+                    className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-cyan-950/90 border border-cyan-500/40 shadow-[0_0_20px_rgba(6,182,212,0.3)] flex flex-col items-center justify-center"
+                  >
+                    <Layers className="w-5 h-5 text-cyan-400" />
+                    <span className="text-[6px] font-black text-cyan-500 mt-0.5 uppercase">Clarifier</span>
+                  </motion.div>
+                </div>
+              </motion.div>
+
+              {/* Planner — right */}
+              <motion.div
+                animate={{ rotate: [90, 450] }}
+                transition={{ repeat: Infinity, duration: 20, ease: "linear" }}
+                className="absolute inset-0"
+                style={{ transformOrigin: "center" }}
+              >
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2">
+                  <motion.div
+                    animate={{ rotate: [-90, -450] }}
+                    transition={{ repeat: Infinity, duration: 20, ease: "linear" }}
+                    className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-indigo-950/90 border border-indigo-500/40 shadow-[0_0_20px_rgba(99,102,241,0.3)] flex flex-col items-center justify-center"
+                  >
+                    <Zap className="w-5 h-5 text-indigo-400" />
+                    <span className="text-[6px] font-black text-indigo-500 mt-0.5 uppercase">Planner</span>
+                  </motion.div>
+                </div>
+              </motion.div>
+
+              {/* Coder — bottom */}
+              <motion.div
+                animate={{ rotate: [180, 540] }}
+                transition={{ repeat: Infinity, duration: 20, ease: "linear" }}
+                className="absolute inset-0"
+                style={{ transformOrigin: "center" }}
+              >
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2">
+                  <motion.div
+                    animate={{ rotate: [-180, -540] }}
+                    transition={{ repeat: Infinity, duration: 20, ease: "linear" }}
+                    className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-emerald-950/90 border border-emerald-500/40 shadow-[0_0_20px_rgba(16,185,129,0.3)] flex flex-col items-center justify-center"
+                  >
+                    <Cpu className="w-5 h-5 text-emerald-400" />
+                    <span className="text-[6px] font-black text-emerald-500 mt-0.5 uppercase">Coder</span>
+                  </motion.div>
+                </div>
+              </motion.div>
+
+              {/* Reviewer — left */}
+              <motion.div
+                animate={{ rotate: [270, 630] }}
+                transition={{ repeat: Infinity, duration: 20, ease: "linear" }}
+                className="absolute inset-0"
+                style={{ transformOrigin: "center" }}
+              >
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2">
+                  <motion.div
+                    animate={{ rotate: [-270, -630] }}
+                    transition={{ repeat: Infinity, duration: 20, ease: "linear" }}
+                    className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-amber-950/90 border border-amber-500/40 shadow-[0_0_20px_rgba(245,158,11,0.3)] flex flex-col items-center justify-center"
+                  >
+                    <ShieldCheck className="w-5 h-5 text-amber-400" />
+                    <span className="text-[6px] font-black text-amber-500 mt-0.5 uppercase">Reviewer</span>
+                  </motion.div>
+                </div>
+              </motion.div>
+
             </div>
-          </motion.div>
-        </motion.div>
+          </div>
+
+        </div>
       </section>
 
       {/* ═══ Feature Spotlight (Product Presentation) ═══ */}
@@ -198,7 +292,7 @@ export default function LandingPage() {
           <div className="text-center pointer-events-none max-w-3xl mx-auto mb-20">
             <h2 className="text-primary font-bold tracking-wide uppercase text-sm mb-3">Limitless Possibilities</h2>
             <h3 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-slate-900 mb-6">A Complete 2D Studio, <br />In Your Browser</h3>
-            <p className="text-lg text-slate-600">No downloads or setup. Pure creativity powered by AI, optimized for 2D desktop games.</p>
+            <p className="text-lg text-slate-600">No downloads or setup. Pure creativity powered by AI, optimized for web games.</p>
           </div>
 
 
@@ -431,15 +525,23 @@ export default function LandingPage() {
         viewport={{}}
         transition={{ duration: 1 }}
       >
-        <div className="max-w-7xl mx-auto flex flex-col items-center justify-between gap-6">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-xl flex items-center justify-center bg-white text-white">
               <span className="font-bold text-[10px] tracking-tighter"><Image src="/logo.png" alt="Logo" width={100} height={100} /></span>
             </div>
             <span className="font-bold text-slate-800">CodePlay</span>
           </div>
+
+          <div className="flex gap-6 items-center">
+            <a href="https://www.linkedin.com/in/srinivas-sai-saran-teja-budumuru-15123a292/" className="text-slate-400 hover:text-indigo-600 transition-colors"><Linkedin className="w-5 h-5" /></a>
+            <a href="https://github.com/TejaBudumuru3" className="text-slate-400 hover:text-slate-900 transition-colors"><Github className="w-5 h-5" /></a>
+            <a href="https://teja-budumuru.vercel.app" className="text-slate-400 hover:text-indigo-600 transition-colors"><Globe className="w-5 h-5" /></a>
+            <a href="mailto:tejabudumuru3@gmail.com" className="text-slate-400 hover:text-red-500 transition-colors"><Mail className="w-5 h-5" /></a>
+          </div>
+
           <p className="text-sm font-medium text-slate-400">
-            Powered by modern AI Agents.
+            Describe it. Build it. Play it.
           </p>
         </div>
       </motion.footer>
