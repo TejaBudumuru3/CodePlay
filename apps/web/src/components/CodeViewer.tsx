@@ -37,9 +37,13 @@ export default function CodeViewer() {
     const JSZip = (await import("jszip")).default;
 
     const zip = new JSZip();
-    code.files?.forEach((file) => {
-      zip.file(file.filename, file.content);
-    });
+    if (code.files && code.files.length > 0) {
+      code.files.forEach((file) => {
+        zip.file(file.filename, file.content);
+      });
+    } else if (code.code) {
+      zip.file("index.html", code.code);
+    }
 
     const blob = await zip.generateAsync({ type: "blob" });
     const filename = plan?.title

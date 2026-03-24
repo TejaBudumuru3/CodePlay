@@ -82,8 +82,8 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen overflow-x-hidden bg-background text-foreground selection:bg-primary/20">
       {/* ═══ Navbar ═══ */}
-      <header className="fixed top-0 left-0 right-0 z-50 glass-strong border-b-0 border-white/40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-18 flex items-center justify-between">
+      <header className="fixed top-4 md:top-6 left-1/2 -translate-x-1/2 z-50 w-[95%] max-w-5xl rounded-full bg-white/70 backdrop-blur-xl border border-white/40 shadow-xl shadow-indigo-500/10 transition-all duration-300">
+        <div className="px-5 md:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-lg bg-white text-white shadow-md shadow-indigo-500/20">
               <span className="font-bold text-lg tracking-tighter object-cover"><Image src="/logo.png" alt="Logo" width={100} height={100} /></span>
@@ -91,33 +91,35 @@ export default function LandingPage() {
             <span className="font-bold text-lg tracking-tight text-slate-800">CodePlay</span>
           </div>
 
-          <div className="flex gap-6 text-sm font-medium text-slate-500">
-            {/* Removed extra footer links to keep it simpler */}
+          <div className="hidden md:flex gap-8 text-[12px] font-bold text-slate-500 tracking-wider uppercase">
+            <Link href="#features" className="hover:text-indigo-600 transition-colors">Features</Link>
+            <Link href="#how-it-works" className="hover:text-indigo-600 transition-colors">Technology</Link>
+            <Link href="#about" className="hover:text-indigo-600 transition-colors">About</Link>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             <Link
               href={ctaHref}
-              className="text-sm font-medium text-slate-600 hover:text-primary transition-colors hidden sm:inline-flex"
+              className="text-[13px] sm:text-sm font-medium text-slate-600 hover:text-primary transition-colors hidden sm:inline-flex"
             >
               {status === "authenticated" ? "" : "Log in"}
             </Link>
             <Link
               href={ctaHref}
-              className="flex items-center gap-1.5 text-sm px-6 py-2.5 rounded-full font-semibold transition-all duration-300
-                bg-slate-900 text-white shadow-lg shadow-slate-900/20
+              className="flex items-center gap-1 sm:gap-1.5 text-xs sm:text-sm px-4 sm:px-6 py-2 sm:py-2.5 rounded-full font-semibold transition-all duration-300
+                bg-slate-900 text-white shadow-lg shadow-slate-900/20 whitespace-nowrap
                 hover:bg-slate-800 hover:scale-[1.02] active:scale-[0.98]"
             >
               Get Started
-              <ChevronRight className="w-4 h-4" />
+              <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </Link>
           </div>
         </div>
       </header>
 
       {/* ═══ Hero Section ═══ */}
-      <section className="relative min-h-[100dvh] lg:h-[100dvh] pt-[100px] pb-10 lg:pt-[80px] lg:pb-6 px-4 lg:px-8 max-w-7xl mx-auto flex flex-col justify-center overflow-hidden">
-        <div className="w-full h-auto lg:h-full lg:max-h-[100%] bg-slate-50 rounded-[2.5rem] p-6 py-12 sm:p-10 lg:p-16 flex flex-col lg:flex-row items-center gap-8 lg:gap-12 xl:gap-12 relative shadow-[0_8px_30px_rgb(0,0,0,0.3)] border border-slate-200/50 overflow-hidden">
+      <section className="relative min-h-[100dvh] lg:h-[100dvh] pt-[100px] pb-10 lg:pt-[80px] lg:pb-6 px-4 lg:px-8 max-w-full mx-auto flex flex-col justify-center overflow-hidden">
+        <div className="w-full h-auto lg:h-full lg:max-h-[100%] bg-slate-50 rounded-[2.5rem] p-6 py-12 sm:p-10 lg:p-16 flex flex-col lg:flex-row items-center gap-8 lg:gap-12 xl:gap-12 relative overflow-hidden">
 
           {/* Left Content */}
           <div className="w-full cursor-default lg:w-[55%] xl:w-1/2 flex flex-col justify-center mt-4 lg:mt-15 z-10 shrink-0">
@@ -175,7 +177,11 @@ export default function LandingPage() {
 
           {/* Right Content / Game Cards Graphic */}
           <div className="hidden lg:flex w-full lg:w-[45%] xl:w-1/2 relative h-[450px] items-center justify-center shrink-0">
-            <div className="relative w-[380px] h-[380px] flex items-center justify-center scale-[0.8] xl:scale-100 origin-center">
+            <motion.div
+              variants={fadeInUp}
+              initial="initial"
+              animate="animate"
+              className="relative w-[380px] h-[380px] flex items-center justify-center scale-[0.8] xl:scale-100 origin-center">
 
               {/* Orbit ring */}
               <div className="absolute inset-0 rounded-full border border-white/5" />
@@ -274,7 +280,7 @@ export default function LandingPage() {
                 </div>
               </motion.div>
 
-            </div>
+            </motion.div>
           </div>
 
         </div>
@@ -478,6 +484,61 @@ export default function LandingPage() {
                 </div>
               </motion.div>
             ))}
+          </motion.div>
+        </div>
+      </section>
+
+      {/* ═══ About Section ═══ */}
+      <section id="about" className="py-24 sm:py-32 px-4 bg-slate-50/50 relative border-b border-slate-200">
+        <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-16 items-center">
+          <motion.div
+            initial={{ opacity: 0, x: -30 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ margin: "-100px" }}
+            transition={{ duration: 0.8 }}
+          >
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-indigo-100 text-indigo-600 mb-8 border border-indigo-200/50 shadow-inner">
+              <Brain className="w-8 h-8" />
+            </div>
+            <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 mb-6 tracking-tight">
+              Driven by the love of games and AI.
+            </h2>
+            <p className="text-slate-600 text-lg leading-relaxed mb-6 font-medium">
+              We built CodePlay because we believe creativity shouldn't be bottlenecked by boilerplate code. You have the imagination; our AI agents have the engineering speed.
+            </p>
+            <p className="text-slate-500 text-base leading-relaxed">
+              By orchestrating leading Large Language Models—fine-tuned for specific software engineering roles—we're making high-quality, lightweight game development accessible to everyone, from hobbyists to professional studios prototyping their next big hit.
+            </p>
+          </motion.div>
+          
+          <motion.div
+            initial={{ opacity: 0, x: 30 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ margin: "-100px" }}
+            transition={{ duration: 0.8 }}
+            className="relative"
+          >
+            <div className="absolute inset-0 bg-gradient-to-br from-indigo-300 to-cyan-300 rounded-[2.5rem] blur-2xl opacity-30 transform -rotate-6"></div>
+            <div className="relative bg-white rounded-[2.5rem] p-6 sm:p-10 shadow-2xl border border-slate-100 hover:rotate-2 transition-transform duration-500 cursor-default">
+              <div className="grid grid-cols-2 gap-4 sm:gap-8">
+                <div>
+                  <h4 className="text-3xl sm:text-4xl font-black text-indigo-600 mb-1 sm:mb-2">10x</h4>
+                  <p className="text-[10px] sm:text-xs font-black text-slate-400 uppercase tracking-widest">Faster Dev</p>
+                </div>
+                <div>
+                  <h4 className="text-3xl sm:text-4xl font-black text-cyan-500 mb-1 sm:mb-2">Zero</h4>
+                  <p className="text-[10px] sm:text-xs font-black text-slate-400 uppercase tracking-widest">Setup</p>
+                </div>
+                <div>
+                  <h4 className="text-3xl sm:text-4xl font-black text-emerald-500 mb-1 sm:mb-2">100%</h4>
+                  <p className="text-[10px] sm:text-xs font-black text-slate-400 uppercase tracking-widest">Exportable</p>
+                </div>
+                <div>
+                  <h4 className="text-2xl min-[360px]:text-3xl sm:text-4xl font-black text-amber-500 mb-1 sm:mb-2 tracking-tighter sm:tracking-normal">Infinite</h4>
+                  <p className="text-[10px] sm:text-xs font-black text-slate-400 uppercase tracking-widest">Ideas</p>
+                </div>
+              </div>
+            </div>
           </motion.div>
         </div>
       </section>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Send, Sparkles, X, History, LogOut, User as UserIcon } from "lucide-react";
+import { Send, Sparkles, X, History, LogOut, User as UserIcon, Coins } from "lucide-react";
 import { useGameBuilder, type ChatMessage } from "@/context/GameBuilderContext";
 import ProgressIndicator from "./ProgressIndicator";
 import { cn } from "@/lib/utils";
@@ -29,9 +29,10 @@ export default function ChatInterface({
     reviewCount,
     plan,
   } = useGameBuilder();
-  const { credits, isLoading: isCreditsLoading, decrementCredits } = useCredits();
+  const { credits, maxCredits, isGuest, isLoading: isCreditsLoading, decrementCredits } = useCredits();
 
   const [input, setInput] = useState("");
+  const [showCredits, setShowCredits] = useState(false);
   const [mcqselection, setMcqSelection] = useState<Record<number, string>>({});
   const [mcqCustomText, setMcqCustomText] = useState<Record<number, string>>({})
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -248,11 +249,25 @@ export default function ChatInterface({
           transition={{ duration: 0.3, ease: [0.23, 1, 0.32, 1] }}
           className="flex md:hidden items-center gap-2 pointer-events-auto"
         >
-          <div className="w-10 h-10 rounded-full bg-white border-2 border-white shadow-sm flex items-center justify-center overflow-hidden">
+          <div 
+            onClick={() => setShowCredits(!showCredits)}
+            className="w-10 h-10 rounded-full bg-white border-2 border-white shadow-sm flex items-center justify-center overflow-hidden cursor-pointer">
             {session?.user?.image ? (
               <img src={session.user.image} alt="User" className="w-full h-full object-cover" />
             ) : (
               <UserIcon className="w-4 h-4 text-slate-500" />
+            )}
+            
+            {/* Mobile Credits Popover overlay */}
+            {showCredits && (
+              <div 
+                onClick={(e) => e.stopPropagation()} 
+                className="absolute top-14 left-0 p-3 bg-white/95 backdrop-blur-xl shadow-xl border border-white/60 rounded-[20px] w-48 z-50 animate-fade-in text-center flex flex-col items-center cursor-default">
+                <Coins className="w-6 h-6 text-amber-500 mb-1" />
+                <h4 className="font-bold text-slate-800 text-sm">{isGuest ? "Guest Credits" : "Daily Credits"}</h4>
+                <p className="text-2xl font-black text-indigo-600 my-1">{isCreditsLoading ? "..." : credits} <span className="text-sm text-slate-400 font-medium">/ {maxCredits}</span></p>
+                <p className="text-[10px] text-slate-500 font-medium uppercase tracking-wider">Refreshes at midnight</p>
+              </div>
             )}
           </div>
           <button

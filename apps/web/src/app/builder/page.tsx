@@ -120,20 +120,20 @@ function BuilderLayout() {
           )}
 
           {activeTab === "code" && (
-            <div className="w-full h-full animate-fade-in flex flex-col pt-4 pr-4 pb-4">
-              <div className="flex-1 bg-white/80 backdrop-blur-3xl rounded-[24px] border border-white/60 shadow-[0_8px_40px_rgba(0,0,0,0.05)] overflow-hidden">
+            <div className="w-full h-full animate-fade-in flex flex-col p-4 pb-24 md:p-4 md:pb-4">
+              <div className="flex-1 w-full flex flex-col bg-white/80 backdrop-blur-3xl rounded-[24px] border border-white/60 shadow-[0_8px_40px_rgba(0,0,0,0.05)] overflow-hidden">
                 <CodeViewer />
               </div>
             </div>
           )}
 
           {activeTab === "preview" && (
-            <div className="w-full h-full animate-fade-in flex flex-col p-2 sm:pt-4 sm:pr-4 sm:pb-4">
+            <div className="w-full h-full animate-fade-in flex flex-col p-2 pb-24 sm:p-4 sm:pb-24 md:p-4 md:pb-4">
               <motion.div
                 initial={{ opacity: 0, x: 100 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0, duration: 0.5 }}
-                className="flex-1 bg-white/80 backdrop-blur-3xl rounded-[20px] sm:rounded-[24px] border border-white/60 shadow-[0_8px_40px_rgba(0,0,0,0.05)] overflow-hidden">
+                className="flex-1 w-full flex flex-col bg-white/80 backdrop-blur-3xl rounded-[20px] sm:rounded-[24px] border border-white/60 shadow-[0_8px_40px_rgba(0,0,0,0.05)] overflow-hidden">
                 <GamePreview />
               </motion.div>
             </div>
