@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { GameBuilderProvider, useGameBuilder } from "@/context/GameBuilderContext";
 import { CreditsProvider, useCredits } from "@/context/CreditsContext";
 import { MessageSquare, Code2, Play, PanelRightClose, PanelRightOpen, Coins } from "lucide-react";
@@ -18,23 +19,34 @@ import { LogOut, User as UserIcon } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
 import Link from "next/link";
 
-function BuilderLayout() {
+function BuilderLayoutContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const { data: session } = useSession();
-  const { status } = useGameBuilder();
-  const [activeTab, setActiveTab] = useState<MobileTab>("chat");
+  const { status, streamingCode } = useGameBuilder();
+  
+  const activeTab = (searchParams.get("tab") as MobileTab) || "chat";
+  
+  const setActiveTab = (tab: MobileTab) => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("tab", tab);
+    router.push(`?${params.toString()}`);
+  };
+
   const [showHistoryPanel, setShowHistoryPanel] = useState(false);
   const [showCredits, setShowCredits] = useState(false);
   const { credits, maxCredits, isGuest, isLoading } = useCredits();
 
   useEffect(() => {
-    if (status === "BUILDING") {
-      setActiveTab("code");
+    if (status === "BUILDING" && streamingCode.length > 0) {
+      if (activeTab !== "code") setActiveTab("code");
     } else if (status === "COMPLETED") {
-      setActiveTab("preview");
-    } else if (status === "CLARIFYING" || status === "PLANNING" || status === "IDLE" || status === "FAILED" || status === "REVIEW" || status === "REBUILD") {
-      setActiveTab("chat");
+      if (activeTab !== "preview") setActiveTab("preview");
+    } else if (status === "CLARIFYING" || status === "FAILED" || status === "REBUILD" || status === "REVIEW") {
+      // For these states, we generally want to be in the chat to see the feedback or answer questions
+      if (activeTab !== "chat") setActiveTab("chat");
     }
-  }, [status]);
+  }, [status, streamingCode, activeTab]);
 
   const tabs: { id: MobileTab; label: string; icon: typeof MessageSquare }[] = [
     { id: "chat", label: "Chat", icon: MessageSquare },
@@ -174,10 +186,12 @@ function BuilderLayout() {
 
 export default function BuilderPage() {
   return (
-    <CreditsProvider>
-      <GameBuilderProvider>
-        <BuilderLayout />
-      </GameBuilderProvider>
-    </CreditsProvider>
+    <Suspense fallback={<div>Loading...</div>}>
+      <CreditsProvider>
+        <GameBuilderProvider>
+          <BuilderLayoutContent />
+        </GameBuilderProvider>
+      </CreditsProvider>
+    </Suspense>
   );
 }
