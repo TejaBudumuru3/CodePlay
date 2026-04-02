@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, useRef, useCallback, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { GameBuilderProvider, useGameBuilder } from "@/context/GameBuilderContext";
 import { CreditsProvider, useCredits } from "@/context/CreditsContext";
@@ -23,30 +23,50 @@ function BuilderLayoutContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { data: session } = useSession();
-  const { status, streamingCode } = useGameBuilder();
+  const { status, streamingCode, sessionId } = useGameBuilder();
   
   const activeTab = (searchParams.get("tab") as MobileTab) || "chat";
   
-  const setActiveTab = (tab: MobileTab) => {
+  const [hasAutoSwitched, setHasAutoSwitched] = useState<Record<string, boolean>>({});
+  const [userOverride, setUserOverride] = useState(false);
+  const prevSessionIdRef = useRef<string | null>(null);
+  
+  const setActiveTab = useCallback((tab: MobileTab, isUserAction = false) => {
+    if (isUserAction) {
+      setUserOverride(true);
+    }
     const params = new URLSearchParams(searchParams.toString());
     params.set("tab", tab);
     router.push(`?${params.toString()}`);
-  };
+  }, [searchParams, router]);
 
   const [showHistoryPanel, setShowHistoryPanel] = useState(false);
   const [showCredits, setShowCredits] = useState(false);
   const { credits, maxCredits, isGuest, isLoading } = useCredits();
 
   useEffect(() => {
-    if (status === "BUILDING" && streamingCode.length > 0) {
-      if (activeTab !== "code") setActiveTab("code");
-    } else if (status === "COMPLETED") {
-      if (activeTab !== "preview") setActiveTab("preview");
-    } else if (status === "CLARIFYING" || status === "FAILED" || status === "REBUILD" || status === "REVIEW") {
-      // For these states, we generally want to be in the chat to see the feedback or answer questions
-      if (activeTab !== "chat") setActiveTab("chat");
+    if (sessionId !== prevSessionIdRef.current) {
+      setHasAutoSwitched({});
+      setUserOverride(false);
+      prevSessionIdRef.current = sessionId;
     }
-  }, [status, streamingCode, activeTab]);
+  }, [sessionId]);
+
+  useEffect(() => {
+    if (userOverride) return;
+
+    if (status === "BUILDING" && streamingCode.length > 0) {
+      if (!hasAutoSwitched["BUILDING"] && activeTab !== "code") {
+        setHasAutoSwitched(prev => ({ ...prev, BUILDING: true }));
+        setActiveTab("code");
+      }
+    } else if (status === "COMPLETED") {
+      if (!hasAutoSwitched["COMPLETED"] && activeTab !== "preview") {
+        setHasAutoSwitched(prev => ({ ...prev, COMPLETED: true }));
+        setActiveTab("preview");
+      }
+    }
+  }, [status, streamingCode, activeTab, userOverride, hasAutoSwitched, setActiveTab]);
 
   const tabs: { id: MobileTab; label: string; icon: typeof MessageSquare }[] = [
     { id: "chat", label: "Chat", icon: MessageSquare },
@@ -78,7 +98,7 @@ function BuilderLayoutContent() {
             return (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
+                onClick={() => setActiveTab(tab.id, true)}
                 className={cn(
                   "w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 relative group",
                   isActive ? "bg-gradient-to-br from-indigo-100 to-blue-100 shadow-[0_4px_12px_rgba(99,102,241,0.15)]" : "hover:bg-slate-50 text-slate-400"
@@ -166,7 +186,7 @@ function BuilderLayoutContent() {
         {tabs.map(({ id, label, icon: Icon }) => (
           <button
             key={id}
-            onClick={() => setActiveTab(id)}
+            onClick={() => setActiveTab(id, true)}
             className={cn(
               "flex-1 flex flex-col items-center gap-1 py-3 text-[10px] font-medium transition-all duration-200",
               activeTab === id
