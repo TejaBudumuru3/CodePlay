@@ -52,7 +52,7 @@ export async function GET(req: NextRequest) {
                 const plan = gameSession.plan as unknown as PlanResponse;
                 const coder = new CoderAgent(llm, sessionId);
                 const reviewer = new ReviewerAgent(sessionId, llm);
-                const MAX_REVIEWS = 3;
+                const MAX_REVIEWS = 5;
 
                 let code = (gameSession.code as unknown as BuildResponse)?.code || '';
                 let reviewCount = gameSession.reviewCount || 0;
@@ -109,11 +109,12 @@ export async function GET(req: NextRequest) {
                 }
 
                 while (currentStatus === 'REBUILD' || currentStatus === 'REVIEW') {
+                    let previousCodeForReview: string | undefined = undefined;
                     if (currentStatus === 'REBUILD') {
                         send("status", { status: "REBUILD", attempt: reviewCount + 1, max: MAX_REVIEWS });
 
-                        const lastReview = gameSession.review as unknown as ReviewerResponse;
-                        const remarks = lastReview.remarks || "Fix all issues";
+                        const lastReview = gameSession.review as unknown as ReviewerResponse | null;
+                        const remarks = lastReview?.remarks || "Fix all issues";
                         const generator = coder.build(plan, code, remarks);
 
                         let fullCode = '';
@@ -123,6 +124,7 @@ export async function GET(req: NextRequest) {
                             send("code_chunk", { chunk });
                         }
 
+                        previousCodeForReview = code;
                         code = fullCode;
 
                         await prisma.session.update({
@@ -139,7 +141,7 @@ export async function GET(req: NextRequest) {
 
                     const summary = (gameSession.clarification as unknown as ClarificationResponse)?.summary || gameSession.prompt;
 
-                    const review = await reviewer.review(plan, code, summary);
+                    const review = await reviewer.review(plan, code, summary, previousCodeForReview);
 
                     send("review_result", { passed: review.passed, issues: review.issues });
 

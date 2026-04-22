@@ -78,7 +78,7 @@ export default function GamePreview() {
       // Add Phaser CDN if needed
       const isPhaser = html.toLowerCase().includes('phaser');
       if (isPhaser && !html.includes('cdn.jsdelivr.net/npm/phaser')) {
-        const cdn = `<script src="https://cdn.jsdelivr.net/npm/phaser@3/dist/phaser.min.js"><\/script>\n`;
+        const cdn = `<script src="https://cdn.jsdelivr.net/npm/phaser@3.90.0/dist/phaser.min.js"><\/script>\n`;
         html = html.replace('</head>', cdn + '</head>');
       }
 
@@ -142,7 +142,7 @@ export default function GamePreview() {
     `;
 
     const phaserCdn = isPhaser
-      ? `<script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"><\/script>\n`
+      ? `<script src="https://cdn.jsdelivr.net/npm/phaser@3.90.0/dist/phaser.min.js"><\/script>\n`
       : "";
 
     // Phaser-specific scale config (still useful for Phaser's internal scaler)

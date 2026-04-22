@@ -15,6 +15,8 @@ export interface ClarificationResponse {
     isSufficient: boolean;
     summary: string;
     confidence: number;
+    complexityTier?: "tier1" | "tier2" | "tier3";
+    capabilityHints?: string[];
 }
 
 export interface clarificationAnswer {
@@ -28,11 +30,26 @@ export interface PlanResponse {
     description: string;
     framework: "vanilla" | "phaser";
     platform: "desktop" | "mobile";
+    complexity: "tier1" | "tier2" | "tier3";
     mechanics: { name: string; description: string }[];
     controls: { input: string; action: string }[];
     systems: string[];
     assetDescriptions: string[];
     gameLoopDescription: string;
+    physics?: {
+        type: "custom" | "arcade";
+        gravity?: number;
+        friction?: number;
+        restitution?: number;
+        damping?: number;
+        customNotes?: string;
+    };
+    stateManagement: {
+        states: string[];
+        transitions: { from: string; to: string; trigger: string }[];
+    };
+    uiElements: string[];
+    capabilities?: string[];
 }
 
 export interface BuildResponse {

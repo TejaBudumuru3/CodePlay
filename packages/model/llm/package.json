@@ -12,9 +12,10 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "@google/genai": "^1.0.0",
     "@openrouter/sdk": "^0.8.0",
-    "openai": "^6.22.0",
-    "db": "*"
+    "db": "*",
+    "openai": "^6.22.0"
   },
   "devDependencies": {
     "@types/node": "^25.3.0",

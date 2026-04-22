@@ -218,9 +218,14 @@ export default function CodeViewer() {
       {plan && (
         <div className="px-4 py-2 border-t border-border/60 bg-card/30 shrink-0">
           <div className="flex items-center justify-between text-xs text-muted-foreground">
-            <span className="truncate mr-2">
-              {plan.title} — {plan.framework === "phaser" ? "Phaser 3" : "Vanilla JS"}
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="truncate">
+                {plan.title} — {plan.framework === "phaser" ? "Phaser 3" : "Vanilla JS"}
+              </span>
+              <span className="inline-flex items-center gap-1 rounded bg-indigo-500/10 px-2 py-0.5 text-[10px] font-medium text-indigo-500 border border-indigo-500/20">
+                ✨ Gemini 3.1 Pro
+              </span>
+            </div>
             <span className="shrink-0">{code?.files?.length} files</span>
           </div>
         </div>
