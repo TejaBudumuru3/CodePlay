@@ -52,6 +52,7 @@ interface GameBuilderContextType extends GameBuilderState {
   loadSessions: () => Promise<void>;
   resetGame: () => void;
   retry: () => void;
+  continueWithFreeTier: () => void;
 }
 
 const GameBuilderContext = createContext<GameBuilderContextType | null>(null);
@@ -66,7 +67,7 @@ function generateId() {
   return Math.random().toString(36).substring(2, 9);
 }
 
-export function GameBuilderProvider({ children }: { children: ReactNode }) {
+export function GameBuilderProvider({ children, userTier = 'FREE' }: { children: ReactNode; userTier?: 'FREE' | 'PRO' }) {
   const [state, setState] = useState<GameBuilderState>({
     sessionId: null,
     status: "IDLE",
@@ -83,7 +84,6 @@ export function GameBuilderProvider({ children }: { children: ReactNode }) {
 
   const pollingRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isPollingRef = useRef(false);
-  // Stable ref so polling callbacks can refresh sessions without circular deps
   const loadSessionsRef = useRef<() => Promise<void>>(async () => { });
   const eventSourceRef = useRef<EventSource | null>(null);
 
@@ -101,7 +101,6 @@ export function GameBuilderProvider({ children }: { children: ReactNode }) {
   );
 
   const startStream = useCallback((sessionId: string) => {
-
     if (eventSourceRef.current) {
       eventSourceRef.current.close()
       eventSourceRef.current = null;
@@ -139,7 +138,6 @@ export function GameBuilderProvider({ children }: { children: ReactNode }) {
       if (status === 'REVIEW') {
         addMessage("status", `Code Reviewer reviewing the code${attempt ? ` (attempt ${attempt}/${max})` : '...'}`)
       }
-
       else if (status === 'REBUILD') {
         addMessage("status", `Issue found, resolving the issues ${attempt ? `(attempt ${attempt}/${max})` : "..."} `)
         setState((prev) => ({ ...prev, streamingCode: "", }))
@@ -241,6 +239,39 @@ export function GameBuilderProvider({ children }: { children: ReactNode }) {
     []
   );
 
+  const pollNext = useCallback(
+    (sessionId: string) => {
+      if (isPollingRef.current) return;
+      isPollingRef.current = true;
+
+      const doPoll = async () => {
+        if (!isPollingRef.current) return;
+        try {
+          setState((prev) => ({ ...prev, isLoading: true }));
+          const result = await callChatApi({ sessionId });
+          isPollingRef.current = false;
+          pollingRef.current = null;
+          processResponse(result);
+          void loadSessionsRef.current();
+        } catch (err) {
+          setState((prev) => ({
+            ...prev,
+            isLoading: false,
+            status: "FAILED",
+            error: err instanceof Error ? err.message : "Unknown error",
+          }));
+          addMessage(
+            "system",
+            `Error: ${err instanceof Error ? err.message : "Unknown error"}`
+          );
+          stopPolling();
+        }
+      };
+      pollingRef.current = setTimeout(doPoll, 2000);
+    },
+    [callChatApi, addMessage, stopPolling]
+  );
+
   const processResponse = useCallback(
     (result: { type: string; data: unknown; sessionId: string }) => {
       const { type, data, sessionId } = result;
@@ -252,14 +283,23 @@ export function GameBuilderProvider({ children }: { children: ReactNode }) {
         case "CLARIFYING": {
           const clarification = data as ClarificationResponse;
           if (clarification.isSufficient) {
-            setState((prev) => ({
-              ...prev,
-              status: "PLANNING",
-              clarification,
-            }));
-            addMessage("status", "Requirements clarified! Planning your game...");
-            // Auto-poll for planning
-            pollNext(sessionId);
+            // Check for Pro Upgrade interstitial
+            if (userTier === 'FREE' && (clarification.complexityTier === 'tier2' || clarification.complexityTier === 'tier3')) {
+                setState((prev) => ({
+                    ...prev,
+                    status: "AWAITING_UPGRADE_DECISION",
+                    clarification,
+                }));
+                addMessage("status", "Complexity detected! Upgrading to Pro will use Gemini Pro for better reasoning and results.");
+            } else {
+                setState((prev) => ({
+                    ...prev,
+                    status: "PLANNING",
+                    clarification,
+                }));
+                addMessage("status", "Requirements clarified! Planning your game...");
+                pollNext(sessionId);
+            }
           } else {
             setState((prev) => ({
               ...prev,
@@ -269,7 +309,7 @@ export function GameBuilderProvider({ children }: { children: ReactNode }) {
             addMessage(
               "agent",
               "I have a few questions to design your game:",
-              clarification   // pass the full object — ChatInterface will render MCQ cards from msg.data
+              clarification
             );
           }
           break;
@@ -286,7 +326,6 @@ export function GameBuilderProvider({ children }: { children: ReactNode }) {
             "status",
             `Plan ready: "${plan.title}" — Now generating code...`
           );
-          // Auto-poll for building
           pollNext(sessionId);
           break;
         }
@@ -319,44 +358,7 @@ export function GameBuilderProvider({ children }: { children: ReactNode }) {
         }
       }
     },
-    [addMessage, stopPolling, startStream]
-  );
-
-  const pollNext = useCallback(
-    (sessionId: string) => {
-      if (isPollingRef.current) return;
-      isPollingRef.current = true;
-
-      const doPoll = async () => {
-        if (!isPollingRef.current) return;
-        try {
-          setState((prev) => ({ ...prev, isLoading: true }));
-          const result = await callChatApi({ sessionId });
-          // Reset BEFORE processResponse so chained pollNext calls inside it succeed
-          isPollingRef.current = false;
-          pollingRef.current = null;
-          processResponse(result);
-          // Refresh sidebar after every poll cycle (status may have changed)
-          void loadSessionsRef.current();
-        } catch (err) {
-          setState((prev) => ({
-            ...prev,
-            isLoading: false,
-            status: "FAILED",
-            error: err instanceof Error ? err.message : "Unknown error",
-          }));
-          addMessage(
-            "system",
-            `Error: ${err instanceof Error ? err.message : "Unknown error"}`
-          );
-          stopPolling();
-        }
-      };
-
-      // 2-second delay to allow the backend to process
-      pollingRef.current = setTimeout(doPoll, 2000);
-    },
-    [callChatApi, processResponse, addMessage, stopPolling]
+    [addMessage, stopPolling, startStream, pollNext, userTier]
   );
 
   const startNewGame = useCallback(
@@ -381,7 +383,6 @@ export function GameBuilderProvider({ children }: { children: ReactNode }) {
       try {
         const result = await callChatApi({ prompt });
         processResponse(result);
-        // Refresh sidebar to show the newly created session
         void loadSessionsRef.current();
       } catch (err) {
         setState((prev) => ({
@@ -481,8 +482,6 @@ export function GameBuilderProvider({ children }: { children: ReactNode }) {
         }
 
         let status: SessionStatus = session.status as SessionStatus;
-        if (status === "BUILDING") status = "BUILDING";
-
         if (session.code && session.status === "COMPLETED") {
           messages.push({
             id: generateId(),
@@ -506,7 +505,6 @@ export function GameBuilderProvider({ children }: { children: ReactNode }) {
           reviewCount: session.reviewCount || 0,
         }));
 
-        // If session is in-progress, resume polling
         if (session.status === 'PLANNING') {
           pollNext(sessionId);
         }
@@ -531,12 +529,9 @@ export function GameBuilderProvider({ children }: { children: ReactNode }) {
       if (!res.ok) return;
       const data = await res.json();
       setState((prev) => ({ ...prev, sessions: data }));
-    } catch {
-      // silently fail
-    }
+    } catch { }
   }, []);
 
-  // Keep ref current so polling callbacks always call latest loadSessions
   loadSessionsRef.current = loadSessions;
 
   const resetGame = useCallback(() => {
@@ -562,16 +557,24 @@ export function GameBuilderProvider({ children }: { children: ReactNode }) {
 
   const retry = useCallback(() => {
     if (!state.sessionId) return;
-    
-    // Clear any previous error and set to loading
     setState((prev) => ({ ...prev, error: null, isLoading: true }));
-    
     if (state.plan) {
       startStream(state.sessionId);
     } else {
       pollNext(state.sessionId);
     }
   }, [state.sessionId, state.plan, startStream, pollNext]);
+
+  const continueWithFreeTier = useCallback(() => {
+    if (!state.sessionId || state.status !== "AWAITING_UPGRADE_DECISION") return;
+    
+    setState((prev) => ({
+      ...prev,
+      status: "PLANNING"
+    }));
+    addMessage("status", "Proceeding with free models. Planning your game...");
+    pollNext(state.sessionId);
+  }, [state.sessionId, state.status, pollNext, addMessage]);
 
   return (
     <GameBuilderContext.Provider
@@ -583,6 +586,7 @@ export function GameBuilderProvider({ children }: { children: ReactNode }) {
         loadSessions,
         resetGame,
         retry,
+        continueWithFreeTier
       }}
     >
       {children}

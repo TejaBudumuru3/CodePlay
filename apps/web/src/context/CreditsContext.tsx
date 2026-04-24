@@ -7,6 +7,7 @@ interface CreditsContextValue {
   credits: number;
   maxCredits: number;
   isGuest: boolean;
+  tier: 'FREE' | 'PRO';
   isLoading: boolean;
   refreshCredits: () => Promise<void>;
   decrementCredits: () => void;
@@ -19,6 +20,7 @@ export function CreditsProvider({ children }: { children: React.ReactNode }) {
   const [credits, setCredits] = useState<number>(0);
   const [maxCredits, setMaxCredits] = useState<number>(0);
   const [isGuest, setIsGuest] = useState<boolean>(true);
+  const [tier, setTier] = useState<'FREE' | 'PRO'>('FREE');
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   const fetchCredits = async () => {
@@ -30,6 +32,7 @@ export function CreditsProvider({ children }: { children: React.ReactNode }) {
         setCredits(data.credits);
         setMaxCredits(data.maxCredits);
         setIsGuest(data.isGuest);
+        setTier(data.tier || 'FREE');
       }
     } catch (err) {
       console.error("Failed to fetch credits", err);
@@ -39,8 +42,7 @@ export function CreditsProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
-    // Only fetch if session is authenticated, or if we know they are a guest (handled by NextAuth).
-    // In our app, users must be logged in (even guests via `guestuser@gmail.com`) to reach /builder.
+    // Only fetch if session is authenticated
     if (status === "authenticated") {
       fetchCredits();
     }
@@ -50,6 +52,7 @@ export function CreditsProvider({ children }: { children: React.ReactNode }) {
     credits,
     maxCredits,
     isGuest,
+    tier,
     isLoading,
     refreshCredits: fetchCredits,
     decrementCredits: () => setCredits((prev) => Math.max(0, prev - 1)),

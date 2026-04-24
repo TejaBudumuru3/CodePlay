@@ -1,5 +1,5 @@
 import { prisma } from "../model/db/client";
-import { LLM } from "../model/llm";
+import { LLM, Tier } from "../model/llm";
 import { ClarifierAgent } from "../agents/clarifer";
 import { PlannerAgent } from "../agents/planner";
 import { CoderAgent } from "../agents/coder";
@@ -11,13 +11,10 @@ interface ControllerOutput {
 }
 
 export class Controller {
-    private llm: LLM;
+    private llm!: LLM;
     private sessionId: string;
 
-
-
     constructor(sessionId: string) {
-        this.llm = new LLM();
         this.sessionId = sessionId;
     }
 
@@ -26,14 +23,18 @@ export class Controller {
             const session = await prisma.session.findUnique({
                 where: {
                     id: this.sessionId
+                },
+                include: {
+                    user: true
                 }
             });
 
             if (!session) throw new Error("Session not found");
 
+            this.llm = new LLM(session.user.tier as unknown as Tier);
+
             const clarifierAgent = new ClarifierAgent(this.llm, session.id);
             const plannerAgent = new PlannerAgent(this.llm, session.id);
-            const builderAgent = new CoderAgent(this.llm, session.id);
 
             switch (session.status) {
                 case 'INIT':
@@ -115,8 +116,4 @@ export class Controller {
             }
         }
     }
-
-
-
-
 }

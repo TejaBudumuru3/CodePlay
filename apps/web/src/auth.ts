@@ -23,29 +23,16 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     Credentials({
       id: "guest",
       name: "Guest",
-      credentials: {},
-      async authorize() {
-        try {
-          // Upsert the single shared guest user
-          const guestUser = await prisma.user.upsert({
-            where: { email: "guestuser@gmail.com" },
-            update: {},
-            create: {
-              email: "guestuser@gmail.com",
-              name: "Guest User",
-            },
-          });
-          return {
-            id: guestUser.id,
-            email: guestUser.email,
-            name: guestUser.name ?? "Guest User",
-          };
-        } catch (err) {
-          // Log the real error but return null so NextAuth shows an auth error,
-          // not a Configuration error
-          console.error("[Guest authorize] DB error:", err);
-          return null;
-        }
+      credentials: {
+        name: { label: "Name", type: "text" }
+      },
+      async authorize(credentials) {
+        // Return a static mock user object, no DB upsert to prevent spam
+        return {
+          id: "guest-jwt",
+          email: "guest@example.com",
+          name: (credentials?.name as string) || "Guest User",
+        };
       },
     }),
   ],
@@ -84,6 +71,10 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         token.userId = user.id;
         token.email = user.email;
         token.name = user.name;
+        // If it's the guest user, flag it in the token
+        if (user.id === "guest-jwt") {
+          token.isGuest = true;
+        }
       }
       return token;
     },
@@ -97,8 +88,10 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       if (token.name) {
         session.user.name = token.name as string;
       }
+      if (token.isGuest) {
+        (session.user as any).isGuest = true;
+      }
       return session;
     },
   },
 });
-

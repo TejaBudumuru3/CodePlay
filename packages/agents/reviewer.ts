@@ -252,7 +252,7 @@ export class ReviewerAgent {
       system: SYSTEM_PROMPT,
       json: true,
       stream: false,
-      mode: 'PLAN',
+      mode: 'REVIEW',
       sessionId: this.sessionId
     }) as ReviewerResponse
 

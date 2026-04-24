@@ -73,4 +73,5 @@ export type SessionStatus =
     | "REVIEW"
     | "REBUILD"
     | "COMPLETED"
-    | "FAILED";
+    | "FAILED"
+    | "AWAITING_UPGRADE_DECISION";

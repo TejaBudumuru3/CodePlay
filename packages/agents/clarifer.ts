@@ -175,10 +175,9 @@ export class ClarifierAgent {
         const response = await this.llm.generate<ClarificationResponse>({
             prompt: prompt,
             system: conversationHistory ? FOLLOWUP_PROMPT : SYSTEM_PROMPT,
-            mode: "PLAN",
+            mode: "CLARIFY",
             sessionId: this.sessionId,
-            json: true
-        }) as ClarificationResponse
+            json: true        }) as ClarificationResponse
 
         if (response) {
             await prisma.session.update({

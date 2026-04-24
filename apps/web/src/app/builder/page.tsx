@@ -24,13 +24,13 @@ function BuilderLayoutContent() {
   const searchParams = useSearchParams();
   const { data: session } = useSession();
   const { status, streamingCode, sessionId } = useGameBuilder();
-  
+
   const activeTab = (searchParams.get("tab") as MobileTab) || "chat";
-  
+
   const [hasAutoSwitched, setHasAutoSwitched] = useState<Record<string, boolean>>({});
   const [userOverride, setUserOverride] = useState(false);
   const prevSessionIdRef = useRef<string | null>(null);
-  
+
   const setActiveTab = useCallback((tab: MobileTab, isUserAction = false) => {
     if (isUserAction) {
       setUserOverride(true);
@@ -42,7 +42,7 @@ function BuilderLayoutContent() {
 
   const [showHistoryPanel, setShowHistoryPanel] = useState(false);
   const [showCredits, setShowCredits] = useState(false);
-  const { credits, maxCredits, isGuest, isLoading } = useCredits();
+  const { credits, maxCredits, isGuest, isLoading, tier } = useCredits();
 
   useEffect(() => {
     if (sessionId !== prevSessionIdRef.current) {
@@ -115,6 +115,17 @@ function BuilderLayoutContent() {
         <div className="flex flex-col gap-4 items-center shrink-0 w-full mt-auto relative">
           {showCredits && (
             <div className="absolute bottom-full left-14 mb-2 p-3 bg-white shadow-xl border border-slate-200 rounded-xl w-48 z-50 animate-fade-in text-center flex flex-col items-center">
+              {session?.user && (
+                <div className="mb-3 w-full border-b border-slate-100 pb-3 text-center">
+                  <div className="flex justify-center items-center gap-1.5 mb-1">
+                    <span className="font-bold text-slate-800 truncate">{session.user.name || "Guest"}</span>
+                    {!isGuest && (
+                      <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-indigo-100 text-indigo-700 font-bold tracking-wider">{tier}</span>
+                    )}
+                  </div>
+                  <span className="text-[10px] text-slate-500 truncate block">{session.user.email}</span>
+                </div>
+              )}
               <Coins className="w-6 h-6 text-amber-500 mb-1" />
               <h4 className="font-bold text-slate-800 text-sm">{isGuest ? "Guest Credits" : "Daily Credits"}</h4>
               <p className="text-2xl font-black text-indigo-600 my-1">{isLoading ? "..." : credits} <span className="text-sm text-slate-400 font-medium">/ {maxCredits}</span></p>
@@ -122,7 +133,7 @@ function BuilderLayoutContent() {
             </div>
           )}
 
-          <div 
+          <div
             onClick={() => setShowCredits(!showCredits)}
             className="w-10 h-10 rounded-full bg-slate-100 border-2 border-white shadow-sm flex items-center justify-center cursor-pointer hover:bg-slate-200 transition-colors overflow-hidden">
             {session?.user?.image ? (
@@ -204,13 +215,20 @@ function BuilderLayoutContent() {
 }
 
 
+function BuilderPageContent() {
+  const { tier } = useCredits();
+  return (
+    <GameBuilderProvider userTier={tier}>
+      <BuilderLayoutContent />
+    </GameBuilderProvider>
+  );
+}
+
 export default function BuilderPage() {
   return (
     <Suspense fallback={<div>Loading...</div>}>
       <CreditsProvider>
-        <GameBuilderProvider>
-          <BuilderLayoutContent />
-        </GameBuilderProvider>
+        <BuilderPageContent />
       </CreditsProvider>
     </Suspense>
   );

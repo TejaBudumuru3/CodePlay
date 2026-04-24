@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@packages/model/db/client";
-import { LLM } from "@packages/model/llm";
+import { LLM, Tier } from "@packages/model/llm";
 import { CoderAgent } from "@packages/agents/coder";
 import { ReviewerAgent } from "@packages/agents/reviewer";
 import { BuildResponse, ClarificationResponse, PlanResponse, ReviewerResponse } from "@packages/model/types";
@@ -24,6 +24,9 @@ export async function GET(req: NextRequest) {
         where: {
             id: sessionId,
             userId: session.user.id
+        },
+        include: {
+            user: true
         }
     })
 
@@ -48,7 +51,7 @@ export async function GET(req: NextRequest) {
 
 
             try {
-                const llm = new LLM();
+                const llm = new LLM(gameSession.user.tier as unknown as Tier);
                 const plan = gameSession.plan as unknown as PlanResponse;
                 const coder = new CoderAgent(llm, sessionId);
                 const reviewer = new ReviewerAgent(sessionId, llm);
@@ -216,6 +219,4 @@ export async function GET(req: NextRequest) {
             'X-Accel-Buffering': 'no'
         }
     });
-
-
 }

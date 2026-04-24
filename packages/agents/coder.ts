@@ -1023,7 +1023,7 @@ export class CoderAgent {
       system: finalSystemPrompt,
       json: false,
       stream: true,
-      mode: 'BUILD',
+      mode: 'CODE',
       sessionId: this.sessionId,
       skipCache: !!previousCode
     }) as AsyncGenerator<string>

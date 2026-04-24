@@ -7,18 +7,35 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const session = await auth();
-    if (!session?.user?.id) {
+    
+    let isGuest = false;
+    let targetUserId = session?.user?.id;
+    
+    if (session?.user) {
+      isGuest = (session.user as any).isGuest === true || targetUserId === "guest-jwt";
+    }
+
+    if (!targetUserId && !isGuest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { id } = await params;
+    if (isGuest) {
+      const guestUser = await prisma.user.findUnique({
+        where: { email: "guestuser@gmail.com" },
+        select: { id: true },
+      });
+      if (guestUser) {
+        targetUserId = guestUser.id;
+      }
+    }
 
     const gameSession = await prisma.session.findUnique({
       where: { id },
     });
 
-    if (!gameSession || gameSession.userId !== session.user.id) {
+    if (!gameSession || gameSession.userId !== targetUserId) {
       return NextResponse.json({ error: "Session not found" }, { status: 404 });
     }
 

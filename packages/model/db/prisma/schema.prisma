@@ -24,6 +24,11 @@ enum status {
   REBUILD
 }
 
+enum Tier {
+  FREE
+  PRO
+}
+
 model User {
   id                String    @id @default(cuid())
   name              String?
@@ -33,6 +38,7 @@ model User {
   createdAt         DateTime  @default(now())
   credits           Int       @default(5)
   lastCreditResetAt DateTime  @default(now())
+  tier              Tier      @default(FREE)
   accounts          Account[]
   sessions          Session[]
 }
@@ -83,5 +89,6 @@ model LlmCache {
   promptHash String   @id
   response   Json
   model      String
+  tier       Tier     @default(FREE)
   createdAt  DateTime @default(now())
 }

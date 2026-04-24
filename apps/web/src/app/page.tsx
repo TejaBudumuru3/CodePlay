@@ -171,7 +171,8 @@ export default function LandingPage() {
 
             {/* Daily Credits Marketing Text */}
             <motion.div variants={fadeInUp} initial="initial" animate="animate" transition={{ delay: 0.4 }} className="text-xs font-medium text-slate-500 max-w-md hidden sm:block">
-              <span className="text-primary font-bold">Daily Free Credits:</span> 5 for logged-in users, 2 as a guest!
+              <span className="text-primary font-bold">Daily Free Credits:</span> 5 for logged-in users, 2 as a guest! <br />
+              <span className="text-indigo-600 font-bold italic">Pro Tier:</span> Higher reasoning, complex games & access to advanced models.
             </motion.div>
           </div>
 
@@ -488,6 +489,104 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* ═══ Pricing Section ═══ */}
+      <section id="pricing" className="py-24 sm:py-32 bg-slate-50 relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-indigo-100/30 rounded-full blur-[120px] translate-x-1/2 -translate-y-1/2 pointer-events-none" />
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          <div className="text-center mb-16">
+            <h2 className="text-indigo-600 font-bold tracking-widest uppercase text-xs mb-3">Pricing</h2>
+            <h3 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-slate-900 mb-6">Choose Your Plan</h3>
+            <p className="text-lg text-slate-600 max-w-2xl mx-auto">From hobbyists to professionals, we have a tier for your ambition.</p>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+            {/* Free Tier */}
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              className="bg-white rounded-[32px] p-8 border border-slate-200 shadow-sm flex flex-col hover:shadow-md transition-shadow"
+            >
+              <div className="mb-8">
+                <h4 className="text-xl font-bold text-slate-900 mb-2">Free</h4>
+                <p className="text-slate-500 text-sm">Perfect for trying out CodePlay.</p>
+              </div>
+              <div className="mb-8">
+                <span className="text-4xl font-black text-slate-900">$0</span>
+                <span className="text-slate-500 font-medium">/month</span>
+              </div>
+              <ul className="space-y-4 mb-10 flex-1 text-left">
+                <li className="flex items-center gap-3 text-slate-600 text-sm">
+                  <Check className="w-5 h-5 text-emerald-500 shrink-0" />
+                  5 Daily Building Credits
+                </li>
+                <li className="flex items-center gap-3 text-slate-600 text-sm font-bold text-indigo-600">
+                  <Check className="w-5 h-5 text-emerald-500 shrink-0" />
+                  OpenRouter Free Models
+                </li>
+                <li className="flex items-center gap-3 text-slate-600 text-sm">
+                  <Check className="w-5 h-5 text-emerald-500 shrink-0" />
+                  Basic Game Architecture (Tier 1)
+                </li>
+                <li className="flex items-center gap-3 text-slate-600 text-sm">
+                  <Check className="w-5 h-5 text-emerald-500 shrink-0" />
+                  Export to Zip
+                </li>
+              </ul>
+              <Link href={ctaHref} className="w-full py-4 rounded-2xl bg-slate-100 text-slate-900 font-bold text-center hover:bg-slate-200 transition-colors">
+                Get Started
+              </Link>
+            </motion.div>
+
+            {/* Pro Tier */}
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              className="bg-slate-900 rounded-[32px] p-8 border border-slate-800 shadow-xl flex flex-col relative overflow-hidden group"
+            >
+              <div className="absolute top-0 right-0 bg-indigo-500 text-white text-[10px] font-black uppercase tracking-widest px-4 py-1 rounded-bl-xl">Recommended</div>
+              <div className="mb-8">
+                <h4 className="text-xl font-bold text-white mb-2 text-left">Pro</h4>
+                <p className="text-slate-400 text-sm text-left">For complex logic and high-end games.</p>
+              </div>
+              <div className="mb-8 text-left">
+                <span className="text-4xl font-black text-white">Contact Us</span>
+              </div>
+              <ul className="space-y-4 mb-10 flex-1 text-left">
+                <li className="flex items-center gap-3 text-slate-300 text-sm font-bold text-indigo-400">
+                  <Check className="w-5 h-5 text-indigo-400 shrink-0" />
+                  ✨ Pro Models
+                </li>
+                <li className="flex items-center gap-3 text-slate-300 text-sm">
+                  <Check className="w-5 h-5 text-indigo-400 shrink-0" />
+                  Complex Games
+                </li>
+                <li className="flex items-center gap-3 text-slate-300 text-sm">
+                  <Check className="w-5 h-5 text-indigo-400 shrink-0" />
+                  Deeper Reasoning & Refinement
+                </li>
+                <li className="flex items-center gap-3 text-slate-300 text-sm">
+                  <Check className="w-5 h-5 text-indigo-400 shrink-0" />
+                  Prioritized Build Pipeline
+                </li>
+                <li className="flex items-center gap-3 text-slate-300 text-sm">
+                  <Check className="w-5 h-5 text-indigo-400 shrink-0" />
+                  Premium Support
+                </li>
+              </ul>
+              <button
+                onClick={() => window.location.href = 'mailto:deals@codeplay.com?subject=Inquiry%20for%20Pro%20Plan'}
+                className="w-full py-4 rounded-2xl bg-indigo-600 text-white font-bold text-center hover:bg-indigo-500 transition-colors shadow-lg shadow-indigo-500/20 group-hover:scale-[1.02] active:scale-[0.98]"
+              >
+                Contact to Deal
+              </button>
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
       {/* ═══ About Section ═══ */}
       <section id="about" className="py-24 sm:py-32 px-4 bg-slate-50/50 relative border-b border-slate-200">
         <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-16 items-center">
@@ -510,7 +609,7 @@ export default function LandingPage() {
               By orchestrating leading Large Language Models—fine-tuned for specific software engineering roles—we're making high-quality, lightweight game development accessible to everyone, from hobbyists to professional studios prototyping their next big hit.
             </p>
           </motion.div>
-          
+
           <motion.div
             initial={{ opacity: 0, x: 30 }}
             whileInView={{ opacity: 1, x: 0 }}

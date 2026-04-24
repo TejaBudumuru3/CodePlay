@@ -3,7 +3,6 @@ import { auth } from "@/auth";
 import { prisma } from "@packages/model/db/client";
 import { Controller } from "@packages/controller/index";
 import { consumeCredit } from "@/lib/credits";
-import crypto from "crypto";
 
 export async function POST(req: NextRequest) {
   try {
@@ -20,20 +19,17 @@ export async function POST(req: NextRequest) {
       prompt?: string;
     };
 
-    const isGuest = session.user.email === "guestuser@gmail.com";
+    const isGuest = (session.user as any).isGuest === true || session.user.id === "guest-jwt";
     const actualUserId = isGuest ? null : userId;
-    let deviceId = req.cookies.get("guest_device_id")?.value;
-    let newDeviceId = false;
 
-    if (isGuest && !deviceId) {
-      deviceId = crypto.randomUUID();
-      newDeviceId = true;
+    if (isGuest) {
+      return NextResponse.json({ error: "Guests are not allowed to create games." }, { status: 403 });
     }
 
     // New game flow — create session and start
     if (!sessionId && prompt) {
-      const creditStatus = await consumeCredit(actualUserId, deviceId);
-      
+      const creditStatus = await consumeCredit(actualUserId, isGuest);
+
       if (!creditStatus.allowed) {
         return NextResponse.json({ error: "Insufficient credits. Please try again tomorrow." }, { status: 403 });
       }
@@ -54,10 +50,6 @@ export async function POST(req: NextRequest) {
         data: result.data,
         sessionId: newSession.id,
       });
-
-      if (newDeviceId && deviceId) {
-        response.cookies.set("guest_device_id", deviceId, { maxAge: 60 * 60 * 24 * 365, httpOnly: true });
-      }
 
       return response;
     }

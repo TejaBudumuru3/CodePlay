@@ -9,8 +9,22 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    let targetUserId = session.user.id;
+    const isGuest = (session.user as any).isGuest === true || targetUserId === "guest-jwt";
+    
+    if (isGuest) {
+      // Fetch the real guest user's games from the DB
+      const guestUser = await prisma.user.findUnique({
+        where: { email: "guestuser@gmail.com" },
+        select: { id: true },
+      });
+      if (guestUser) {
+        targetUserId = guestUser.id;
+      }
+    }
+
     const sessions = await prisma.session.findMany({
-      where: { userId: session.user.id },
+      where: { userId: targetUserId },
       orderBy: { createdAt: "desc" },
       select: {
         id: true,

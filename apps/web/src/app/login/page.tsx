@@ -95,32 +95,52 @@ function LoginContent() {
                 <div className="w-full border-t border-border/60" />
               </div>
               <div className="relative flex justify-center mx-2 text-xs">
-                <span className="text-muted-foreground px-2 bg-white">or</span>
+                <span className="text-muted-foreground px-2 bg-white">or Continue as Guest</span>
               </div>
             </div>
 
-            <button
-              onClick={handleGuestSignIn}
-              disabled={isLoading !== null}
-              className="w-full flex items-center justify-center gap-3 px-5 py-3.5 rounded-xl font-medium transition-all duration-300
-                bg-secondary/60 text-secondary-foreground border border-border
-                hover:bg-secondary hover:border-primary/20 hover:scale-[1.01] active:scale-[0.99]
-                disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+            <form
+              onSubmit={async (e) => {
+                e.preventDefault();
+                setIsLoading("guest");
+                const formData = new FormData(e.currentTarget);
+                const name = formData.get("name") as string;
+                const email = "guest@example.com";
+                await signIn("guest", { name, email, callbackUrl: "/builder" });
+              }}
+              className="space-y-3 flex flex-col"
             >
-              {isLoading === "guest" ? (
-                <div className="w-5 h-5 border-2 border-muted-foreground border-t-foreground rounded-full animate-spin" />
-              ) : null}
-              Continue as Guest
-            </button>
+              <input
+                type="text"
+                name="name"
+                placeholder="Name"
+                required
+                disabled={isLoading !== null}
+                className="w-full px-5 py-3 rounded-xl border border-border bg-white text-sm outline-none focus:border-primary/50 transition-colors disabled:opacity-50"
+              />
+              <button
+                type="submit"
+                disabled={isLoading !== null}
+                className="w-full flex items-center justify-center gap-3 px-5 py-3.5 rounded-xl font-medium transition-all duration-300
+                  bg-secondary/60 text-secondary-foreground border border-border
+                  hover:bg-secondary hover:border-primary/20 hover:scale-[1.01] active:scale-[0.99]
+                  disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 mt-2"
+              >
+                {isLoading === "guest" ? (
+                  <div className="w-5 h-5 border-2 border-muted-foreground border-t-foreground rounded-full animate-spin" />
+                ) : null}
+                Enter Showcase Gallery
+              </button>
+            </form>
           </div>
 
           {/* Footer note */}
           <div className="text-xs text-muted-foreground/80 text-center mt-7 space-y-2 border-t border-border/40 pt-5">
             <p>
-              🎁 <span className="font-semibold text-slate-700">Daily Free Credits:</span> Guests get 2 credits, Registered users get 5!
+              🎁 <span className="font-semibold text-slate-700">Daily Free Credits:</span> 5 credits for Registered Users.
             </p>
             <p className="opacity-80">
-              Guest mode saves only your latest game. Sign in to keep history.
+              Guest mode allows you to explore the Showcase Gallery. Sign in to build!
             </p>
           </div>
         </div>
