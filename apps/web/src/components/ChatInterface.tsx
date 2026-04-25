@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Send, Sparkles, X, History, LogOut, User as UserIcon, Coins, ArrowRight, ShieldCheck, Zap } from "lucide-react";
+import { Send, Sparkles, X, History, LogOut, User as UserIcon, Coins, ArrowRight, ShieldCheck, Zap, Download } from "lucide-react";
 import { useGameBuilder, type ChatMessage } from "@/context/GameBuilderContext";
 import ProgressIndicator from "./ProgressIndicator";
 import { cn } from "@/lib/utils";
@@ -33,7 +33,8 @@ export default function ChatInterface({
     loadSessions,
     sessions,
     continueWithFreeTier,
-    loadSession
+    loadSession,
+    code
   } = useGameBuilder();
   const { credits, maxCredits, isGuest, isLoading: isCreditsLoading, decrementCredits, tier } = useCredits();
   const [input, setInput] = useState("");
@@ -42,6 +43,35 @@ export default function ChatInterface({
   const [mcqCustomText, setMcqCustomText] = useState<Record<number, string>>({})
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const handleDownloadZip = async () => {
+    if (!code) return;
+
+    const JSZip = (await import("jszip")).default;
+    const zip = new JSZip();
+
+    if (code.files && code.files.length > 0) {
+      code.files.forEach((file) => {
+        zip.file(file.filename, file.content);
+      });
+    } else if (code.code) {
+      zip.file("index.html", code.code);
+    }
+
+    const blob = await zip.generateAsync({ type: "blob" });
+    const filename = plan?.title
+      ? `${plan.title.replace(/[^a-zA-Z0-9]/g, "_")}.zip`
+      : "game.zip";
+
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -155,7 +185,7 @@ export default function ChatInterface({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isGuest && status === "IDLE") {
-      router.push("/login");
+      signOut({ callbackUrl: '/login' });
       return;
     }
 
@@ -366,7 +396,7 @@ export default function ChatInterface({
                   </div>
 
                   <button
-                    onClick={() => router.push("/login")}
+                    onClick={() => signOut({ callbackUrl: '/login' })}
                     className="w-full mt-6 py-3 rounded-xl bg-slate-900 text-white font-bold flex items-center justify-center gap-2 hover:bg-slate-800 transition-all shadow-lg shadow-slate-900/10"
                   >
                     Login to Create Your Own <ArrowRight className="w-4 h-4" />
@@ -417,7 +447,7 @@ export default function ChatInterface({
                 </p>
                 <div className="flex flex-col gap-3 relative z-10">
                   <button
-                    onClick={() => window.location.href = 'mailto:deals@codeplay.com?subject=Upgrade%20to%20Pro'}
+                    onClick={() => window.location.href = 'mailto:tejabudumuru3@gmail.com?subject=Upgrade%20to%20Pro'}
                     className="w-full py-4 rounded-2xl bg-indigo-600 text-white font-bold flex items-center justify-center gap-2 hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-500/30 hover:scale-[1.02] active:scale-[0.98]"
                   >
                     Upgrade to Pro ✨
@@ -496,7 +526,7 @@ export default function ChatInterface({
               onChange={(e) => setInput(e.target.value)}
               onClick={() => {
                 if (isGuest && status === "IDLE") {
-                  router.push("/login");
+                  signOut({ callbackUrl: '/login' });
                 }
               }}
               placeholder={getPlaceholder()}
@@ -516,7 +546,7 @@ export default function ChatInterface({
                 onClick={(e) => {
                   if (isGuest && status === "IDLE") {
                     e.preventDefault();
-                    router.push("/login");
+                    signOut({ callbackUrl: '/login' });
                   } else {
                     // It's technically a button type="submit" usually, but let's just let the form handle it or call handleSubmit manually
                     // Actually, keep it as submit and the form onSubmit handles it. But we change the button type based on guest state
@@ -534,6 +564,24 @@ export default function ChatInterface({
               </button>
             </div>
           </div>
+
+          {status === "COMPLETED" && (
+            <motion.div 
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="absolute -bottom-12 left-1/2 -translate-x-1/2 w-full max-w-md flex items-center justify-center gap-2 text-[11px] font-bold text-indigo-600 bg-white/60 backdrop-blur-md py-1.5 px-4 rounded-full border border-white/60 shadow-sm"
+            >
+              <Download className="w-3.5 h-3.5" />
+              <span>Game ready! Download it now for a better experience.</span>
+              <button 
+                type="button"
+                onClick={handleDownloadZip}
+                className="ml-2 px-3 py-1 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors shadow-sm"
+              >
+                Download
+              </button>
+            </motion.div>
+          )}
         </form>
       </motion.div>
     </div>

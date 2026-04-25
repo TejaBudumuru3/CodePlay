@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Download, Copy, Check, FileCode2, FileText, Palette } from "lucide-react";
+import { Download, Copy, Check, FileCode2, FileText, Palette, Sparkles } from "lucide-react";
 import { useGameBuilder } from "@/context/GameBuilderContext";
+import { useCredits } from "@/context/CreditsContext";
 import { cn } from "@/lib/utils";
 import Prism from "prismjs";
 import "prismjs/components/prism-markup";
@@ -12,6 +13,7 @@ import "prismjs/themes/prism.css";
 
 export default function CodeViewer() {
   const { code, plan, status, streamingCode } = useGameBuilder();
+  const { tier } = useCredits();
   const [activeTab, setActiveTab] = useState("index.html");
   const [copied, setCopied] = useState(false);
   const codeRef = useRef<HTMLElement>(null);
@@ -218,13 +220,20 @@ export default function CodeViewer() {
       {plan && (
         <div className="px-4 py-2 border-t border-border/60 bg-card/30 shrink-0">
           <div className="flex items-center justify-between text-xs text-muted-foreground">
-            <div className="flex items-center gap-2">
-              <span className="truncate">
-                {plan.title} — {plan.framework === "phaser" ? "Phaser 3" : "Vanilla JS"}
-              </span>
-              <span className="inline-flex items-center gap-1 rounded bg-indigo-500/10 px-2 py-0.5 text-[10px] font-medium text-indigo-500 border border-indigo-500/20">
-                ✨ Gemini 3.1 Pro
-              </span>
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
+                <span className="truncate max-w-[150px] sm:max-w-none">
+                  {plan.title} — {plan.framework === "phaser" ? "Phaser 3" : "Vanilla JS"}
+                </span>
+                <span className="inline-flex items-center gap-1 rounded bg-indigo-500/10 px-2 py-0.5 text-[10px] font-medium text-indigo-500 border border-indigo-500/20">
+                  <Sparkles className="w-2.5 h-2.5" />
+                  {tier === "PRO" ? "Gemini 3.1 Pro" : "Qwen Coder"}
+                </span>
+              </div>
+              <div className="hidden sm:flex items-center gap-1.5 text-indigo-600/70">
+                <Download className="w-3 h-3" />
+                <span className="font-medium">Download source for best experience</span>
+              </div>
             </div>
             <span className="shrink-0">{code?.files?.length} files</span>
           </div>

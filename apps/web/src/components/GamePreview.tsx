@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect } from "react";
-import { Play, RotateCcw, Maximize2, Minimize2, Monitor } from "lucide-react";
+import { Play, RotateCcw, Maximize2, Minimize2, Monitor, Download } from "lucide-react";
 import { useGameBuilder } from "@/context/GameBuilderContext";
 import { cn } from "@/lib/utils";
 
@@ -67,6 +67,35 @@ export default function GamePreview() {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [previewKey, setPreviewKey] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  const handleDownloadZip = async () => {
+    if (!code) return;
+
+    const JSZip = (await import("jszip")).default;
+    const zip = new JSZip();
+
+    if (code.files && code.files.length > 0) {
+      code.files.forEach((file) => {
+        zip.file(file.filename, file.content);
+      });
+    } else if (code.code) {
+      zip.file("index.html", code.code);
+    }
+
+    const blob = await zip.generateAsync({ type: "blob" });
+    const filename = plan?.title
+      ? `${plan.title.replace(/[^a-zA-Z0-9]/g, "_")}.zip`
+      : "game.zip";
+
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
 
   const buildSrcdoc = useCallback(() => {
     if (!code) return null;
@@ -249,6 +278,18 @@ export default function GamePreview() {
           )}
         </h2>
         <div className="flex items-center gap-1">
+          <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-medium text-indigo-500 bg-indigo-50/50 rounded-lg border border-indigo-100/50 mr-1 animate-fade-in">
+            <Download className="w-3 h-3" />
+            <span>Download for best experience</span>
+          </div>
+          <button
+            onClick={handleDownloadZip}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 transition-all duration-200 shadow-sm"
+            title="Download game files"
+          >
+            <Download className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Download</span>
+          </button>
           <button
             onClick={handleRefresh}
             className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs text-muted-foreground

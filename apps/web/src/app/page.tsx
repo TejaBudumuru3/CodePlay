@@ -577,7 +577,7 @@ export default function LandingPage() {
                 </li>
               </ul>
               <button
-                onClick={() => window.location.href = 'mailto:deals@codeplay.com?subject=Inquiry%20for%20Pro%20Plan'}
+                onClick={() => window.location.href = 'mailto:tejabudumuru3@gmail.com?subject=Inquiry%20for%20Pro%20Plan'}
                 className="w-full py-4 rounded-2xl bg-indigo-600 text-white font-bold text-center hover:bg-indigo-500 transition-colors shadow-lg shadow-indigo-500/20 group-hover:scale-[1.02] active:scale-[0.98]"
               >
                 Contact to Deal
