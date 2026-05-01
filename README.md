@@ -40,38 +40,8 @@ No game development experience required. Describe your idea, answer a few target
 
 ## 🏗️ Architecture Overview
 
-```mermaid
-graph TD
-    User((User)) --> |"Game Idea"| UI[Next.js Frontend]
-    UI --> |"Create Session"| API[API Routes]
-    API --> |"Orchestrate"| Ctrl[Controller]
-    Ctrl --> |"INIT/CLARIFYING"| Clar[Clarifier Agent]
-    Ctrl --> |"PLANNING"| Plan[Planner Agent]
-    Ctrl --> |"BUILDING"| Code[Coder Agent]
-    Ctrl --> |"REVIEW"| Rev[Reviewer Agent]
+<img width="1024" height="903" alt="image" src="https://github.com/user-attachments/assets/c81c3031-f821-4f9c-983c-309564daa2fe" />
 
-    Clar --> |"MCQ Questions"| User
-    Clar --> |"Requirements JSON"| DB[(PostgreSQL)]
-    Plan --> |"Technical Blueprint"| DB
-    Code --> |"SSE Stream"| UI
-    Code --> |"Generated Code"| DB
-    Rev --> |"PASS/FAIL"| Ctrl
-    Rev --> |"FAIL + Feedback"| Code
-
-    DB --> |"Cache Check"| Cache[LLM Cache]
-    Ctrl --> |"LLM Calls"| LLM[GEMINI PRO API / \nOPENAI API]
-
-    style User fill:#6366f1,stroke:#4f46e5,color:#fff
-    style UI fill:#0ea5e9,stroke:#0284c7,color:#fff
-    style Ctrl fill:#8b5cf6,stroke:#7c3aed,color:#fff
-    style Clar fill:#06b6d4,stroke:#0891b2,color:#fff
-    style Plan fill:#3b82f6,stroke:#2563eb,color:#fff
-    style Code fill:#10b981,stroke:#059669,color:#fff
-    style Rev fill:#f59e0b,stroke:#d97706,color:#fff
-    style DB fill:#64748b,stroke:#475569,color:#fff
-    style Cache fill:#94a3b8,stroke:#64748b,color:#fff
-    style LLM fill:#ec4899,stroke:#db2777,color:#fff
-```
 
 The state machine drives the entire session lifecycle:
 
