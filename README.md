@@ -59,7 +59,7 @@ graph TD
     Rev --> |"FAIL + Feedback"| Code
 
     DB --> |"Cache Check"| Cache[LLM Cache]
-    Ctrl --> |"LLM Calls"| LLM[OpenRouter API]
+    Ctrl --> |"LLM Calls"| LLM[GEMINI PRO API / \nOPENAI API]
 
     style User fill:#6366f1,stroke:#4f46e5,color:#fff
     style UI fill:#0ea5e9,stroke:#0284c7,color:#fff
