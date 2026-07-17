@@ -25,6 +25,13 @@ const GEMINI_API_KEYS = (process.env.GEMINI_API_KEYS ?? '').split(',').filter(k 
 const GEMINI_MODEL_CASCADE = (process.env.GEMINI_MODEL_CASCADE ?? 'gemini-3.1-pro-preview,gemini-2.5-pro,gemini-1.5-pro,gemini-2.5-flash').split(',').map(m => m.trim());
 const NVIDIA_MODEL_CASCADE = (process.env.NVIDIA_MODEL_CASCADE ?? 'z-ai/glm-5.2,deepseek-ai/deepseek-v4-flash').split(',').map(m => m.trim());
 
+const GEMINI_MODELS: Record<string, string> = {
+    'CLARIFY': process.env.GEMINI_CLARIFY_MODEL ?? "gemini-2.5-pro",
+    'PLAN': process.env.GEMINI_PLAN_MODEL ?? "gemini-2.5-pro",
+    'CODE': process.env.GEMINI_CODE_MODEL ?? "gemini-3.1-pro-preview",
+    'REVIEW': process.env.GEMINI_REVIEW_MODEL ?? "gemini-2.5-pro",
+};
+
 interface PrepareParams {
     system: string;
     prompt: string;
@@ -243,7 +250,10 @@ export class LLM {
     // ═══════════════════════════════════════════
     private async generateWithGemini<T>(params: PrepareParams, cascadeIndex = 0): Promise<T> {
         const maxKeyAttempts = Math.max(GEMINI_API_KEYS.length, 1);
-        const model = GEMINI_MODEL_CASCADE[cascadeIndex % GEMINI_MODEL_CASCADE.length];
+        
+        const primaryModel = GEMINI_MODELS[params.mode] || "gemini-2.5-pro";
+        const modelsToTry = Array.from(new Set([primaryModel, ...GEMINI_MODEL_CASCADE]));
+        const model = modelsToTry[cascadeIndex % modelsToTry.length];
 
         console.log(`[LLM Gateway] Mode: ${params.mode} -> Model (Gemini fallback): ${model}`);
 
@@ -315,11 +325,11 @@ export class LLM {
                 const isBusy = status === 503 || status === 404 || message.includes('unavailable') || message.includes('overloaded') || message.includes('not found');
                 if (isBusy) {
                     const nextIndex = cascadeIndex + 1;
-                    if (nextIndex >= GEMINI_MODEL_CASCADE.length * 2) {
+                    if (nextIndex >= modelsToTry.length * 2) {
                         console.error('[Gemini] Exhausted all model cascade loops');
                         throw err;
                     }
-                    const nextModel = GEMINI_MODEL_CASCADE[nextIndex % GEMINI_MODEL_CASCADE.length];
+                    const nextModel = modelsToTry[nextIndex % modelsToTry.length];
                     console.warn(`[Gemini] ${model} unavailable (503), retrying with fallback: ${nextModel}`);
                     return this.generateWithGemini<T>({ ...params, skipCache: params.skipCache }, nextIndex);
                 }
@@ -336,7 +346,9 @@ export class LLM {
         const apiKey = this.getNextGeminiKey();
         if (!apiKey) throw new Error('No Gemini API keys available');
 
-        const model = GEMINI_MODEL_CASCADE[cascadeIndex % GEMINI_MODEL_CASCADE.length];
+        const primaryModel = GEMINI_MODELS[params.mode] || "gemini-3.1-pro-preview";
+        const modelsToTry = Array.from(new Set([primaryModel, ...GEMINI_MODEL_CASCADE]));
+        const model = modelsToTry[cascadeIndex % modelsToTry.length];
         const ai = new GoogleGenAI({ apiKey });
 
         const hashPrompt = this.hash(params.system + params.prompt + model + this.tier);
@@ -415,11 +427,11 @@ export class LLM {
 
                     if (isBusy) {
                         const nextIndex = cascadeIndex + 1;
-                        if (nextIndex >= GEMINI_MODEL_CASCADE.length * 2) {
+                        if (nextIndex >= modelsToTry.length * 2) {
                             console.error('[Gemini BUILD] Exhausted all model cascade loops');
                             throw err;
                         }
-                        const nextModel = GEMINI_MODEL_CASCADE[nextIndex % GEMINI_MODEL_CASCADE.length];
+                        const nextModel = modelsToTry[nextIndex % modelsToTry.length];
                         console.warn(`[Gemini BUILD] ${model} unavailable (503), retrying with fallback: ${nextModel}`);
                         const fallbackGen = await self.generateGeminiBuild<T>({ ...params, skipCache: params.skipCache }, nextIndex) as AsyncGenerator<string, void, unknown>;
                         for await (const chunk of fallbackGen) {
