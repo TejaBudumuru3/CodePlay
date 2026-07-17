@@ -256,6 +256,17 @@ export class ReviewerAgent {
       sessionId: this.sessionId
     }) as ReviewerResponse
 
+    if (response) {
+      if (!response.passed && (!response.issues || response.issues.length === 0)) {
+        response.passed = true;
+        response.remarks = null;
+      }
+      if (response.passed) {
+        response.issues = [];
+        response.remarks = null;
+      }
+    }
+
     const status = response.passed ? 'COMPLETED' : 'REBUILD'
     await prisma.session.update({
       where: {

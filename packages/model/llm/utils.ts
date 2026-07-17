@@ -5,6 +5,8 @@ export async function RunWithRetry(
     sessionId: string,
     retries: number = 3,
     delay: number = 1000,
+    updateSessionOnFailure: boolean = true,
+    onRetry?: (attempt: number, error: any) => void,
 ): Promise<any> {
     for (let attempt = 1; attempt <= retries; attempt++) {
         try {
@@ -20,34 +22,44 @@ export async function RunWithRetry(
 
             const isRetryable = !isClientError && !isPermanentQuota;
 
+            if (onRetry) {
+                try {
+                    onRetry(attempt, err);
+                } catch {}
+            }
+
             if (!isRetryable) {
                 console.error(`[LLM - error] Non-retryable error (attempt ${attempt}): ${rawMessage}`);
 
-                await prisma.session.update({
-                    where: {
-                        id: sessionId
-                    },
-                    data: {
-                        status: "FAILED",
-                        retries: attempt,
-                        error: `[LLM - error] Non-retryable error: ${rawMessage}`
-                    }
-                })
+                if (updateSessionOnFailure && sessionId) {
+                    await prisma.session.update({
+                        where: {
+                            id: sessionId
+                        },
+                        data: {
+                            status: "FAILED",
+                            retries: attempt,
+                            error: `[LLM - error] Non-retryable error: ${rawMessage}`
+                        }
+                    }).catch(() => {});
+                }
                 throw err;
             }
 
             if (attempt === retries) {
                 console.error(`[LLM - error] Max retries reached (${retries}): ${rawMessage}`);
-                await prisma.session.update({
-                    where: {
-                        id: sessionId
-                    },
-                    data: {
-                        status: "FAILED",
-                        retries: attempt,
-                        error: `[LLM - error] Max retries reached: ${rawMessage}`
-                    }
-                })
+                if (updateSessionOnFailure && sessionId) {
+                    await prisma.session.update({
+                        where: {
+                            id: sessionId
+                        },
+                        data: {
+                            status: "FAILED",
+                            retries: attempt,
+                            error: `[LLM - error] Max retries reached: ${rawMessage}`
+                        }
+                    }).catch(() => {});
+                }
                 throw err;
             }
 

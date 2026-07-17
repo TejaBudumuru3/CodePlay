@@ -13,7 +13,7 @@ export default function middleware(req: NextRequest) {
   const isLoginPage = pathname === "/login";
   const isApiAuth = pathname.startsWith("/api/auth");
   const isLandingPage = pathname === "/";
-  const isProtected = pathname.startsWith("/builder") || pathname.startsWith("/api/chat") || pathname.startsWith("/api/sessions");
+  const isProtected = pathname.startsWith("/builder") || pathname.startsWith("/api/chat") || pathname.startsWith("/api/sessions") || pathname.startsWith("/api/stream") || pathname.startsWith("/api/credits");
 
   // Always allow: static assets, auth API, landing page
   if (isApiAuth || isLandingPage) {

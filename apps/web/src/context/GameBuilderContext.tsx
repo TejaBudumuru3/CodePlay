@@ -113,12 +113,38 @@ export function GameBuilderProvider({ children, userTier = 'FREE' }: { children:
       status: "BUILDING",
     }))
 
-    addMessage("status", "connecting to agent to start building....");
+    if (userTier === 'FREE') {
+      addMessage("status", "Generating game code using free models... (Note: Generating complex code on the free tier may take more time than usual. Upgrade to Pro for faster speeds.)");
+    } else {
+      addMessage("status", "connecting to agent to start building....");
+    }
 
     const es = new EventSource(`/api/stream?sessionId=${sessionId}`);
     eventSourceRef.current = es;
 
+    let timeoutId: NodeJS.Timeout;
+
+    const resetTimeout = () => {
+      if (timeoutId) clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => {
+        if (es.readyState !== EventSource.CLOSED) {
+          es.close();
+          setState((prev) => ({
+            ...prev,
+            status: 'FAILED',
+            error: "Stream connection timed out due to inactivity",
+            isLoading: false
+          }));
+          addMessage('system', 'Stream connection timed out. Please try again.');
+          eventSourceRef.current = null;
+        }
+      }, 300000); // 5 minutes
+    };
+
+    resetTimeout();
+
     es.addEventListener("code_chunk", (e) => {
+      resetTimeout();
       const { chunk } = JSON.parse(e.data);
       setState((prev) => ({
         ...prev,
@@ -128,14 +154,18 @@ export function GameBuilderProvider({ children, userTier = 'FREE' }: { children:
     });
 
     es.addEventListener("status", (e) => {
-      const { status, attempt, max } = JSON.parse(e.data);
+      resetTimeout();
+      const { status, attempt, max, isRetry, message } = JSON.parse(e.data);
       setState((prev) => ({
         ...prev,
         status: status as SessionStatus,
         reviewCount: attempt || prev.reviewCount
       }));
 
-      if (status === 'REVIEW') {
+      if (isRetry && message) {
+        addMessage("status", message);
+      }
+      else if (status === 'REVIEW') {
         addMessage("status", `Code Reviewer reviewing the code${attempt ? ` (attempt ${attempt}/${max})` : '...'}`)
       }
       else if (status === 'REBUILD') {
@@ -145,6 +175,7 @@ export function GameBuilderProvider({ children, userTier = 'FREE' }: { children:
     })
 
     es.addEventListener("review_result", (e) => {
+      resetTimeout();
       const { passed, issues } = JSON.parse(e.data);
       if (passed) {
         addMessage("status", 'code review passed ')
@@ -156,6 +187,7 @@ export function GameBuilderProvider({ children, userTier = 'FREE' }: { children:
 
 
     es.addEventListener("complete", (e) => {
+      if (timeoutId) clearTimeout(timeoutId);
       const { code } = JSON.parse(e.data);
       setState((prev) => ({
         ...prev,
@@ -172,6 +204,7 @@ export function GameBuilderProvider({ children, userTier = 'FREE' }: { children:
     })
 
     es.addEventListener("error", (e) => {
+      if (timeoutId) clearTimeout(timeoutId);
       if (es.readyState === EventSource.CLOSED) {
         setState((prev) => ({
           ...prev,
@@ -290,7 +323,7 @@ export function GameBuilderProvider({ children, userTier = 'FREE' }: { children:
                     status: "AWAITING_UPGRADE_DECISION",
                     clarification,
                 }));
-                addMessage("status", "Complexity detected! Upgrading to Pro will use Gemini Pro for better reasoning and results.");
+                 addMessage("status", "Complexity detected! Upgrading to Pro will use Gemini Pro for better reasoning and faster results compared to the free tier models.");
             } else {
                 setState((prev) => ({
                     ...prev,
@@ -482,6 +515,18 @@ export function GameBuilderProvider({ children, userTier = 'FREE' }: { children:
         }
 
         let status: SessionStatus = session.status as SessionStatus;
+        let shouldPoll = session.status === 'PLANNING';
+
+        if (status === 'CLARIFYING') {
+          const clar = session.clarification as ClarificationResponse | null;
+          if (clar?.isSufficient) {
+            status = 'PLANNING';
+            shouldPoll = true;
+          } else if (!clar || !clar.questions || clar.questions.length === 0) {
+            shouldPoll = true;
+          }
+        }
+
         if (session.code && session.status === "COMPLETED") {
           messages.push({
             id: generateId(),
@@ -501,11 +546,11 @@ export function GameBuilderProvider({ children, userTier = 'FREE' }: { children:
           plan: (session.plan as PlanResponse) || null,
           code: session.status === "COMPLETED" ? (session.code as BuildResponse) : null,
           error: session.error || null,
-          isLoading: false,
+          isLoading: shouldPoll ? true : false,
           reviewCount: session.reviewCount || 0,
         }));
 
-        if (session.status === 'PLANNING') {
+        if (shouldPoll) {
           pollNext(sessionId);
         }
         else if (['BUILDING', 'REVIEW', 'REBUILD'].includes(session.status)) {
@@ -557,13 +602,22 @@ export function GameBuilderProvider({ children, userTier = 'FREE' }: { children:
 
   const retry = useCallback(() => {
     if (!state.sessionId) return;
-    setState((prev) => ({ ...prev, error: null, isLoading: true }));
+    const nextStatus = state.plan ? "BUILDING" : "PLANNING";
+    setState((prev) => ({
+      ...prev,
+      error: null,
+      isLoading: true,
+      status: nextStatus
+    }));
+
     if (state.plan) {
+      addMessage("status", "Retrying game build...");
       startStream(state.sessionId);
     } else {
+      addMessage("status", "Retrying planning phase...");
       pollNext(state.sessionId);
     }
-  }, [state.sessionId, state.plan, startStream, pollNext]);
+  }, [state.sessionId, state.plan, startStream, pollNext, addMessage]);
 
   const continueWithFreeTier = useCallback(() => {
     if (!state.sessionId || state.status !== "AWAITING_UPGRADE_DECISION") return;
@@ -572,7 +626,7 @@ export function GameBuilderProvider({ children, userTier = 'FREE' }: { children:
       ...prev,
       status: "PLANNING"
     }));
-    addMessage("status", "Proceeding with free models. Planning your game...");
+     addMessage("status", "Proceeding with free models. Planning your game... (Note: Generating complex code on the free tier may take more time than usual. Upgrade to Pro for faster speeds.)");
     pollNext(state.sessionId);
   }, [state.sessionId, state.status, pollNext, addMessage]);
 

@@ -52,6 +52,18 @@ export async function GET(req: NextRequest) {
 
             try {
                 const llm = new LLM(gameSession.user.tier as unknown as Tier);
+                llm.onRetry = (attempt: number, error: any) => {
+                    const rawMsg = error.message || String(error);
+                    const isTimeout = rawMsg.toLowerCase().includes("timeout") || rawMsg.toLowerCase().includes("timed out");
+                    const statusText = gameSession.status === 'REBUILD' ? 'REBUILD' : 'BUILDING';
+                    send("status", {
+                        status: statusText,
+                        attempt,
+                        max: 3,
+                        isRetry: true,
+                        message: isTimeout ? "NVIDIA request timed out. Retrying automatically..." : `Request failed. Retrying...`
+                    });
+                };
                 const plan = gameSession.plan as unknown as PlanResponse;
                 const coder = new CoderAgent(llm, sessionId);
                 const reviewer = new ReviewerAgent(sessionId, llm);
@@ -64,11 +76,17 @@ export async function GET(req: NextRequest) {
                 // Handle Retry when FAILED but code generation is requested
                 if (currentStatus === 'FAILED') {
                     currentStatus = code ? 'REBUILD' : 'BUILDING';
+                    reviewCount = 0;
                     await prisma.session.update({
                         where: { id: sessionId },
-                        data: { status: currentStatus, error: null }
+                        data: { 
+                            status: currentStatus, 
+                            reviewCount: 0,
+                            error: null 
+                        }
                     });
                     gameSession.status = currentStatus;
+                    gameSession.reviewCount = 0;
                 }
 
                 if (currentStatus === "BUILDING" && !code) {
@@ -195,14 +213,21 @@ export async function GET(req: NextRequest) {
                 }
             }
             catch (err) {
-                send("error", { message: err instanceof Error ? err.message : "Unknown error" })
+                const rawMsg = err instanceof Error ? err.message : "Unknown error";
+                let friendlyMsg = rawMsg;
+                if (rawMsg.includes("503") || rawMsg.includes("ResourceExhausted") || rawMsg.includes("request limit")) {
+                    friendlyMsg = "The NVIDIA servers are currently overloaded (503 Service Unavailable). This is a temporary server issue. Please try again in a few moments.";
+                } else if (rawMsg.toLowerCase().includes("timeout") || rawMsg.toLowerCase().includes("timed out")) {
+                    friendlyMsg = "The request timed out. This is a temporary server issue. Please try again.";
+                }
+                send("error", { message: friendlyMsg })
                 await prisma.session.update({
                     where: { id: sessionId },
                     data: {
                         status: 'FAILED',
-                        error: err instanceof Error ? err.message : "Stream route error"
+                        error: friendlyMsg
                     }
-                })
+                }).catch(() => {});
             }
             finally {
                 clearInterval(heartbeat);

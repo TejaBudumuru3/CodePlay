@@ -22,7 +22,8 @@ const NVIDIA_MODELS: Record<string, string> = {
 const GEMINI_API_KEYS = (process.env.GEMINI_API_KEYS ?? '').split(',').filter(k => k.trim());
 
 // Dynamic Model Cascade: if the primary model fails (503), it cycles to the next one automatically.
-const GEMINI_MODEL_CASCADE = (process.env.GEMINI_MODEL_CASCADE ?? 'gemini-2.5-pro,gemini-1.5-pro,gemini-2.5-flash').split(',').map(m => m.trim());
+const GEMINI_MODEL_CASCADE = (process.env.GEMINI_MODEL_CASCADE ?? 'gemini-3.1-pro-preview,gemini-2.5-pro,gemini-1.5-pro,gemini-2.5-flash').split(',').map(m => m.trim());
+const NVIDIA_MODEL_CASCADE = (process.env.NVIDIA_MODEL_CASCADE ?? 'z-ai/glm-5.2,deepseek-ai/deepseek-v4-flash').split(',').map(m => m.trim());
 
 interface PrepareParams {
     system: string;
@@ -40,13 +41,15 @@ export enum Tier {
 }
 
 export class LLM {
+    public onRetry?: (attempt: number, error: any) => void;
     private geminiKeyIndex: number = 0;
     private nvidiaClient: OpenAI;
 
     constructor(private tier: Tier = Tier.FREE) {
         this.nvidiaClient = new OpenAI({
             baseURL: 'https://integrate.api.nvidia.com/v1',
-            apiKey: NVIDIA_API_KEY
+            apiKey: NVIDIA_API_KEY,
+            timeout: 120_000,
         });
     }
 
@@ -73,81 +76,166 @@ export class LLM {
     // NVIDIA PROVIDER (Free/NIM Tier)
     // ═══════════════════════════════════════════
     private async generateWithNvidia<T>(params: PrepareParams): Promise<T | AsyncGenerator<string, void, unknown>> {
-        const model = NVIDIA_MODELS[params.mode] || NVIDIA_FALLBACK_MODEL;
-        const hashPrompt = this.hash(params.system + params.prompt);
+        const primaryModel = NVIDIA_MODELS[params.mode] || NVIDIA_FALLBACK_MODEL;
+        // Build the cascade for this request
+        const modelsToTry = Array.from(new Set([primaryModel, ...NVIDIA_MODEL_CASCADE]));
+        let lastError: any;
 
-        console.log(`[LLM Gateway] Mode: ${params.mode} -> Model: ${model}`);
+        for (const model of modelsToTry) {
+            console.log(`[LLM Gateway] Mode: ${params.mode} -> Trying NVIDIA Model: ${model}`);
+            
+            try {
+                // Determine if we should use thinking mode
+                const useThinking = model.includes("nemotron-3-ultra") || model.includes("deepseek-v4") || model.includes("glm-5.2") || model.includes("thinking");
+                const hashPrompt = this.hash(params.system + params.prompt + model + this.tier);
 
-        return await RunWithRetry(async () => {
-            if (params.stream) {
-                const res = await (this.nvidiaClient.chat.completions.create({
-                    model: model,
-                    temperature: this.getTemperature(params.mode),
-                    max_tokens: this.getTokenLimit(params.mode),
-                    messages: [
-                        { role: 'system', content: params.system },
-                        { role: 'user', content: params.prompt }
-                    ],
-                    chat_template_kwargs: { "enable_thinking": true, "clear_thinking": true },
-                    stream: true,
-                } as any) as any);
-
-                let fullRes = '';
-                const self = this;
-                return (async function* () {
-                    for await (const chunk of res) {
-                        const text = chunk.choices[0]?.delta?.content || '';
-                        fullRes += text;
-                        yield text;
-                    }
-
-                    if (!params.skipCache && fullRes.trim()) {
-                        await prisma.llmCache.create({
-                            data: {
-                                promptHash: hashPrompt,
-                                response: fullRes,
-                                model: `nvidia:${model}`,
-                                tier: self.tier as any
-                            }
-                        }).catch(() => { });
-                    }
-
-                    if (params.sessionId && params.mode === 'CODE') {
-                        await prisma.session.update({
-                            where: { id: params.sessionId },
-                            data: { status: 'REVIEW', code: { code: fullRes } }
-                        });
-                    }
-                })();
-            } else {
-                const res = await this.nvidiaClient.chat.completions.create({
-                    model: model,
-                    temperature: this.getTemperature(params.mode),
-                    max_tokens: this.getTokenLimit(params.mode),
-                    messages: [
-                        { role: 'system', content: params.system },
-                        { role: 'user', content: params.prompt }
-                    ],
-                    response_format: params.json ? { type: 'json_object' } : undefined
-                });
-
-                const content = res.choices[0]?.message?.content;
-                if (!content || !content.trim()) throw new Error('No content in NVIDIA response');
-
+                // Check cache before running RunWithRetry
                 if (!params.skipCache) {
-                    await prisma.llmCache.create({
-                        data: {
+                    const cached = await (prisma.llmCache as any).findFirst({
+                        where: {
                             promptHash: hashPrompt,
-                            response: content,
-                            model: `nvidia:${model}`,
-                            tier: this.tier as any
+                            tier: this.tier
                         }
-                    }).catch(() => { });
+                    });
+
+                    if (cached) {
+                        console.log(`[LLM Cache] Hit for NVIDIA model: ${model}`);
+                        if (params.stream) {
+                            if (params.sessionId && params.mode === 'CODE') {
+                                await prisma.session.update({
+                                    where: { id: params.sessionId },
+                                    data: { status: 'REVIEW', code: { code: cached.response } }
+                                }).catch(() => {});
+                            }
+                            return (async function* () {
+                                yield cached.response as string;
+                            })() as AsyncGenerator<string, void, unknown>;
+                        } else {
+                            return (params.json ? JSON.parse(cached.response as string) : cached.response) as T;
+                        }
+                    }
                 }
 
-                return (params.json ? JSON.parse(content) : content) as T;
+                return await RunWithRetry(async () => {
+                    if (params.stream) {
+                        const res = await (this.nvidiaClient.chat.completions.create({
+                            model: model,
+                            temperature: this.getTemperature(params.mode),
+                            max_tokens: this.getTokenLimit(params.mode),
+                            messages: [
+                                { role: 'system', content: params.system },
+                                { role: 'user', content: params.prompt }
+                            ],
+                            ...(useThinking ? { chat_template_kwargs: { "enable_thinking": true, "clear_thinking": true } } : {}),
+                            stream: true,
+                        } as any) as any);
+
+                        let fullRes = '';
+                        const self = this;
+                        return (async function* () {
+                            try {
+                                for await (const chunk of res) {
+                                    const text = chunk.choices[0]?.delta?.content || '';
+                                    fullRes += text;
+                                    yield text;
+                                }
+
+                                if (!params.skipCache && fullRes.trim()) {
+                                    await prisma.llmCache.create({
+                                        data: {
+                                            promptHash: hashPrompt,
+                                            response: fullRes,
+                                            model: `nvidia:${model}`,
+                                            tier: self.tier as any
+                                        }
+                                    }).catch(() => { });
+                                }
+
+                                if (params.sessionId && params.mode === 'CODE') {
+                                    await prisma.session.update({
+                                        where: { id: params.sessionId },
+                                        data: { status: 'REVIEW', code: { code: fullRes } }
+                                    });
+                                }
+                            } catch (streamErr) {
+                                console.error("[LLM Gateway] Stream error:", streamErr);
+                                if (params.sessionId) {
+                                    await prisma.session.update({
+                                        where: { id: params.sessionId },
+                                        data: { status: 'FAILED', error: "Stream connection lost during generation" }
+                                    }).catch(() => {});
+                                }
+                                throw streamErr;
+                            }
+                        })();
+                    } else {
+                        const requestParams: any = {
+                            model: model,
+                            temperature: this.getTemperature(params.mode),
+                            max_tokens: this.getTokenLimit(params.mode),
+                            messages: [
+                                { role: 'system', content: params.system },
+                                { role: 'user', content: params.prompt }
+                            ],
+                            ...(useThinking ? { chat_template_kwargs: { "enable_thinking": true, "clear_thinking": true } } : {})
+                        };
+                        
+                        if (params.json) {
+                            // Fallback if nvext isn't supported by the model
+                            requestParams.response_format = { type: 'json_object' };
+                        }
+
+                        const res = await this.nvidiaClient.chat.completions.create(requestParams, {
+                            timeout: params.mode === 'CODE' ? 90_000 : 20_000
+                        });
+
+                        let content = res.choices[0]?.message?.content;
+                        if (!content || !content.trim()) throw new Error('No content in NVIDIA response');
+
+                        if (params.json) {
+                            try {
+                                JSON.parse(content);
+                            } catch (e) {
+                                // Fallback extraction if model outputs markdown json block
+                                const match = content.match(/```(?:json)?([\s\S]*?)```/);
+                                if (match && match[1]) {
+                                    content = match[1].trim();
+                                    JSON.parse(content); // Test if valid now
+                                } else {
+                                    throw new Error("Invalid JSON output from model");
+                                }
+                            }
+                        }
+
+                        if (!params.skipCache) {
+                            await prisma.llmCache.create({
+                                data: {
+                                    promptHash: hashPrompt,
+                                    response: content,
+                                    model: `nvidia:${model}`,
+                                    tier: this.tier as any
+                                }
+                            }).catch(() => { });
+                        }
+
+                        return (params.json ? JSON.parse(content) : content) as T;
+                    }
+                }, params.sessionId, 1, 1000, false, this.onRetry); // 1 = immediate fallback to next model in cascade on fail
+                
+            } catch (err: any) {
+                console.error(`[LLM Gateway] Model ${model} failed:`, err.message || err);
+                lastError = err;
             }
-        }, params.sessionId);
+        }
+        
+        // If we exhausted all models, fail the session and throw
+        if (params.sessionId) {
+            await prisma.session.update({
+                where: { id: params.sessionId },
+                data: { status: 'FAILED', error: `All models in cascade failed. Last error: ${lastError?.message || lastError}` }
+            }).catch(() => {});
+        }
+        throw lastError || new Error("All NVIDIA models in cascade failed");
     }
 
     // ═══════════════════════════════════════════
@@ -158,6 +246,22 @@ export class LLM {
         const model = GEMINI_MODEL_CASCADE[cascadeIndex % GEMINI_MODEL_CASCADE.length];
 
         console.log(`[LLM Gateway] Mode: ${params.mode} -> Model (Gemini fallback): ${model}`);
+
+        const hashPrompt = this.hash(params.system + params.prompt + model + this.tier);
+
+        // Check cache
+        if (!params.skipCache) {
+            const cached = await (prisma.llmCache as any).findFirst({
+                where: {
+                    promptHash: hashPrompt,
+                    tier: this.tier
+                }
+            });
+            if (cached) {
+                console.log(`[LLM Cache] Hit for Gemini model: ${model}`);
+                return (params.json ? JSON.parse(cached.response as string) : cached.response) as T;
+            }
+        }
 
         for (let keyAttempt = 0; keyAttempt < maxKeyAttempts; keyAttempt++) {
             const apiKey = this.getNextGeminiKey();
@@ -186,7 +290,6 @@ export class LLM {
 
                 // Cache the response
                 if (!params.skipCache) {
-                    const hashPrompt = this.hash(params.system + params.prompt);
                     await prisma.llmCache.create({
                         data: {
                             promptHash: hashPrompt,
@@ -236,9 +339,36 @@ export class LLM {
         const model = GEMINI_MODEL_CASCADE[cascadeIndex % GEMINI_MODEL_CASCADE.length];
         const ai = new GoogleGenAI({ apiKey });
 
+        const hashPrompt = this.hash(params.system + params.prompt + model + this.tier);
+
+        // Check cache before processing stream
+        if (!params.skipCache) {
+            const cached = await (prisma.llmCache as any).findFirst({
+                where: {
+                    promptHash: hashPrompt,
+                    tier: this.tier
+                }
+            });
+            if (cached) {
+                console.log(`[LLM Cache] Hit for Gemini Build model: ${model}`);
+                if (params.stream) {
+                    if (params.sessionId) {
+                        await prisma.session.update({
+                            where: { id: params.sessionId },
+                            data: { status: 'REVIEW', code: { code: cached.response } }
+                        }).catch(() => {});
+                    }
+                    return (async function* () {
+                        yield cached.response as string;
+                    })() as AsyncGenerator<string, void, unknown>;
+                } else {
+                    return (params.json ? JSON.parse(cached.response as string) : cached.response) as T;
+                }
+            }
+        }
+
         if (params.stream) {
             const self = this;
-            const hashPrompt = this.hash(params.system + params.prompt);
 
             return (async function* () {
                 let fullRes = '';
@@ -315,37 +445,7 @@ export class LLM {
     // PUBLIC API
     // ═══════════════════════════════════════════
     async generate<T>(params: PrepareParams): Promise<T | AsyncGenerator<string, void, unknown>> {
-        const hashPrompt = this.hash(params.system + params.prompt);
-
         try {
-            // Check cache first (segregated by tier)
-            if (!params.skipCache) {
-                // We use any cast for Tier to avoid potential import mismatches with generated prisma
-                const cached = await (prisma.llmCache as any).findFirst({
-                    where: {
-                        promptHash: hashPrompt,
-                        tier: this.tier
-                    }
-                });
-
-                if (cached) {
-                    try {
-                        if (params.stream) {
-                            return (async function* () {
-                                yield cached.response as string;
-                            })() as AsyncGenerator<string, void, unknown>;
-                        } else {
-                            return (params.json
-                                ? JSON.parse(cached.response as string)
-                                : cached.response
-                            ) as T;
-                        }
-                    } catch (err) {
-                        console.error('[Cache] Error returning cached response:', err);
-                    }
-                }
-            }
-
             // Route to appropriate provider
             if (this.tier === Tier.PRO) {
                 if (params.mode === 'CODE') {
@@ -353,7 +453,7 @@ export class LLM {
                 }
                 return await RunWithRetry(async () => {
                     return this.generateWithGemini<T>(params);
-                }, params.sessionId);
+                }, params.sessionId, 3, 1000, true, this.onRetry);
             } else {
                 // Free Tier: Use NVIDIA
                 return await this.generateWithNvidia<T>(params);

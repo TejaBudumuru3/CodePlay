@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@packages/model/db/client";
 import { Controller } from "@packages/controller/index";
-import { consumeCredit } from "@/lib/credits";
+import { consumeCredit, refundCredit } from "@/lib/credits";
 
 export async function POST(req: NextRequest) {
   try {
@@ -34,24 +34,30 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: "Insufficient credits. Please try again tomorrow." }, { status: 403 });
       }
 
-      const newSession = await prisma.session.create({
-        data: {
-          userId,
-          prompt,
-          status: "INIT",
-        },
-      });
+      try {
+        const newSession = await prisma.session.create({
+          data: {
+            userId,
+            prompt,
+            status: "INIT",
+          },
+        });
 
-      const controller = new Controller(newSession.id);
-      const result = await controller.start();
+        const controller = new Controller(newSession.id);
+        const result = await controller.start();
 
-      const response = NextResponse.json({
-        type: result.type,
-        data: result.data,
-        sessionId: newSession.id,
-      });
+        const response = NextResponse.json({
+          type: result.type,
+          data: result.data,
+          sessionId: newSession.id,
+        });
 
-      return response;
+        return response;
+      } catch (err) {
+        // Refund credit if the initial setup fails
+        await refundCredit(actualUserId, isGuest);
+        throw err;
+      }
     }
 
     // Existing game flow — continue session
@@ -79,8 +85,17 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Missing prompt or sessionId" }, { status: 400 });
   } catch (error) {
     console.error("[/api/chat] Error:", error);
+    const rawMsg = error instanceof Error ? error.message : "Internal server error";
+    let friendlyMsg = rawMsg;
+    if (rawMsg.includes("503") || rawMsg.includes("ResourceExhausted") || rawMsg.includes("request limit")) {
+      friendlyMsg = "The NVIDIA servers are currently overloaded (503 Service Unavailable). This is a temporary server issue. Your credit has been fully refunded. Please try again in a few moments.";
+    } else if (rawMsg.toLowerCase().includes("timeout") || rawMsg.toLowerCase().includes("timed out")) {
+      friendlyMsg = "The request timed out. This is a temporary server issue. Your credit has been fully refunded. Please try again.";
+    } else {
+      friendlyMsg = `${rawMsg} (Your credit has been fully refunded.)`;
+    }
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Internal server error" },
+      { error: friendlyMsg },
       { status: 500 }
     );
   }

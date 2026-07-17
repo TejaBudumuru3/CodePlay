@@ -18,7 +18,7 @@ export class Controller {
         this.sessionId = sessionId;
     }
 
-    async start(userMessage?: string): Promise<ControllerOutput> {
+    async start(userMessage?: string, retryDepth: number = 0): Promise<ControllerOutput> {
         try {
             const session = await prisma.session.findUnique({
                 where: {
@@ -36,7 +36,18 @@ export class Controller {
             const clarifierAgent = new ClarifierAgent(this.llm, session.id);
             const plannerAgent = new PlannerAgent(this.llm, session.id);
 
-            switch (session.status) {
+            let currentStatus = session.status;
+            const clarificationData = session.clarification as unknown as ClarificationResponse;
+
+            if (currentStatus === 'CLARIFYING' && clarificationData && clarificationData.isSufficient) {
+                currentStatus = 'PLANNING';
+                await prisma.session.update({
+                    where: { id: this.sessionId },
+                    data: { status: 'PLANNING' }
+                }).catch(() => {});
+            }
+
+            switch (currentStatus) {
                 case 'INIT':
                     const questions = await clarifierAgent.clarify(session.prompt);
                     return {
@@ -53,7 +64,8 @@ export class Controller {
                     }
                 case 'PLANNING':
                     const planReq = session.clarification as unknown as ClarificationResponse
-                    const plan = await plannerAgent.plan(planReq.summary, session.prompt)
+                    const summary = planReq?.summary || session.prompt;
+                    const plan = await plannerAgent.plan(summary, session.prompt)
 
                     return {
                         type: 'PLANNING',
@@ -74,6 +86,13 @@ export class Controller {
                         data: session.code as unknown as BuildResponse
                     }
                 case 'FAILED': {
+                    if (retryDepth > 2) {
+                        return {
+                            type: 'ERROR',
+                            data: "Max recovery attempts reached. Please start a new session."
+                        };
+                    }
+
                     let fallbackStatus = 'INIT';
                     if (session.clarification) {
                         const clar = session.clarification as unknown as ClarificationResponse;
@@ -87,7 +106,7 @@ export class Controller {
                         data: { status: fallbackStatus as any, error: null }
                     });
                     
-                    return this.start(userMessage);
+                    return this.start(userMessage, retryDepth + 1);
                 }
 
                 default:

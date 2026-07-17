@@ -180,25 +180,16 @@ export class ClarifierAgent {
             json: true        }) as ClarificationResponse
 
         if (response) {
+            const nextStatus = response.isSufficient ? 'PLANNING' : 'CLARIFYING';
             await prisma.session.update({
                 where: {
                     id: this.sessionId
                 },
                 data: {
-                    status: 'CLARIFYING',
+                    status: nextStatus,
                     clarification: response as unknown as Prisma.InputJsonObject,
                 }
             })
-            if (response.isSufficient) {
-                await prisma.session.update({
-                    where: {
-                        id: this.sessionId
-                    },
-                    data: {
-                        status: 'PLANNING',
-                    }
-                })
-            }
         }
         return response as ClarificationResponse;
     }

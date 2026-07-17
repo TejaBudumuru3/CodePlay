@@ -51,8 +51,23 @@ export async function consumeCredit(userId?: string | null, isGuest?: boolean) {
 
   await prisma.user.update({
     where: { id: userId },
-    data: { credits: credits - 1, lastCreditResetAt: new Date() },
+    data: { 
+      credits: credits - 1, 
+      ...(isBeforeToday(lastCreditResetAt) ? { lastCreditResetAt: new Date() } : {}) 
+    },
   });
 
   return { allowed: true, remaining: credits - 1 };
+}
+
+export async function refundCredit(userId?: string | null, isGuest?: boolean) {
+  if (isGuest || !userId || userId === "guest-jwt") return;
+
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user) return;
+
+  await prisma.user.update({
+    where: { id: userId },
+    data: { credits: Math.min(USER_DAILY_CREDITS, user.credits + 1) },
+  });
 }

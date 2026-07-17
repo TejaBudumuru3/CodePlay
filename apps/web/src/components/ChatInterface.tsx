@@ -542,7 +542,7 @@ export default function ChatInterface({
 
             <div className="flex flex-wrap items-center justify-end px-3 pb-2 gap-2">
               <button
-                type="button"
+                type="submit"
                 onClick={(e) => {
                   if (isGuest && status === "IDLE") {
                     e.preventDefault();
@@ -566,14 +566,14 @@ export default function ChatInterface({
           </div>
 
           {status === "COMPLETED" && (
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               className="absolute -bottom-12 left-1/2 -translate-x-1/2 w-full max-w-md flex items-center justify-center gap-2 text-[11px] font-bold text-indigo-600 bg-white/60 backdrop-blur-md py-1.5 px-4 rounded-full border border-white/60 shadow-sm"
             >
               <Download className="w-3.5 h-3.5" />
               <span>Game ready! Download it now for a better experience.</span>
-              <button 
+              <button
                 type="button"
                 onClick={handleDownloadZip}
                 className="ml-2 px-3 py-1 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors shadow-sm"
