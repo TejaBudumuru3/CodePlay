@@ -7,6 +7,8 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Next.js](https://img.shields.io/badge/Next.js_15-000000?style=for-the-badge&logo=next.js&logoColor=white)](https://nextjs.org/)
 [![Prisma](https://img.shields.io/badge/Prisma-2D3748?style=for-the-badge&logo=prisma&logoColor=white)](https://www.prisma.io/)
+[![NVIDIA NIM](https://img.shields.io/badge/NVIDIA_NIM-76B900?style=for-the-badge&logo=nvidia&logoColor=white)](https://build.nvidia.com/)
+[![Gemini](https://img.shields.io/badge/Google_Gemini-4285F4?style=for-the-badge&logo=googlegemini&logoColor=white)](https://ai.google.dev/)
 [![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)](https://www.docker.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](./LICENSE)
 
@@ -16,59 +18,58 @@
 
 ## What is CodePlay?
 
-**CodePlay** is an AI-powered multi-agent system that transforms natural language prompts into fully playable 2D browser games. Powered by a sophisticated pipeline of specialized AI agents — **Clarifier**, **Planner**, **Coder**, and **Reviewer** — it autonomously designs, builds, and quality-checks complete games in minutes.
+**CodePlay** is an AI-powered multi-agent web application that transforms natural language prompts into fully playable 2D browser games. Powered by a specialized pipeline of AI agents — **Clarifier**, **Planner**, **Coder**, and **Reviewer** — it autonomously designs, builds, and quality-checks complete games in minutes.
 
-No game development experience required. Describe your idea, answer a few targeted questions, and watch your game come to life in real time.
+No game development experience required. Describe your idea, answer a few targeted multiple-choice questions, and watch your game code stream and render live in your browser.
 
 ---
 
 ## ✨ Key Features
 
-- **Multi-Agent AI Pipeline** — Four specialized agents work in sequence: Clarifier → Planner → Coder → Reviewer, each with a single, well-defined responsibility
-- **Real-Time Code Streaming** — SSE-based live code generation streams code directly to your browser as it's written
-- **Dual Framework Support** — Generates games in both Vanilla Canvas API and Phaser 3, chosen automatically based on game complexity
-- **Intelligent Clarification** — MCQ-based game design interview builds a confidence score; proceeds only when ≥ 0.8 confidence is reached
-- **Automated Code Review** — Reviewer Agent QA-checks every build and triggers up to 3 review-rebuild iterations if issues are found
-- **LLM Response Caching** — SHA-256 hash-based caching eliminates redundant LLM calls and cuts costs significantly
-- **Live Game Preview** — In-browser iframe rendering alongside syntax-highlighted code, updated in real time
-- **Credit System** — Daily refresh: 5 credits for registered users, 2 for guests — no sign-up required to try
-- **Session History** — All game creation sessions are persisted; revisit and replay any previous game
-- **ZIP Download** — Download the complete self-contained game as a ZIP file
-- **Docker + CI/CD** — Containerized deployment pipeline with GitHub Actions → Oracle Cloud SSH deploy
+- **Multi-Agent AI Pipeline** — Four specialized agents work in sequence: Clarifier → Planner → Coder → Reviewer, each with a single, well-defined responsibility.
+- **Real-Time Code Streaming** — SSE (Server-Sent Events) live code generation streams single-file HTML/CSS/JS directly to your browser as it's written.
+- **Dual Framework Support** — Generates games in both Vanilla Canvas API and Phaser 3, selected automatically based on game complexity and mechanics.
+- **Intelligent Clarification** — MCQ-based game design interview builds a confidence score; proceeds only when ≥ 0.8 confidence is reached.
+- **Automated Code Review & Rebuild** — Reviewer Agent QA-checks every build and triggers up to **5 review-rebuild iterations** if bugs or syntax issues are found.
+- **Multi-Tier LLM Gateway & Caching** — Routes requests dynamically (NVIDIA NIM API for Free tier, Google Gemini API for Pro tier) with SHA-256 hash response caching to eliminate redundant LLM calls.
+- **Live Game Preview** — In-browser iframe rendering alongside syntax-highlighted code, updated in real time during generation.
+- **Credit System** — Daily refresh: 5 credits for registered users, with Guest authentication mode for seamless onboarding.
+- **Session History** — All game creation sessions are persisted in PostgreSQL; revisit and replay any previous game anytime.
+- **ZIP Download** — Download the complete self-contained game as a standalone ZIP file.
+- **Docker + CI/CD** — Containerized production deployment pipeline with GitHub Actions → Oracle Cloud SSH deploy.
 
 ---
 
 ## 🏗️ Architecture Overview
 
-<img width="1024" height="903" alt="image" src="https://github.com/user-attachments/assets/c81c3031-f821-4f9c-983c-309564daa2fe" />
+![CodePlay System Architecture](./docs/codeplay_architecture_diagram.png)
 
-
-The state machine drives the entire session lifecycle:
+The session state machine drives the complete lifecycle:
 
 ```
-INIT → CLARIFYING → PLANNING → BUILDING → REVIEW → COMPLETED
+INIT → CLARIFYING → PLANNING → BUILDING → REVIEW → REBUILD → COMPLETED (or FAILED)
 ```
 
-If the Reviewer returns `FAIL`, the session loops back to `BUILDING` with targeted fix instructions — up to 3 times before accepting the best output.
+If the Reviewer Agent returns `FAIL`, the session loops to `REBUILD` with targeted fix instructions — up to **5 iterations** before completing.
 
 ### Sequence Diagram
 
-The full request lifecycle from user prompt to playable game:
+The full request lifecycle from user prompt to playable browser game:
 
 ```mermaid
 sequenceDiagram
-    participant User
-    participant UI as Next.js Frontend
-    participant API as API Routes
-    participant Ctrl as Controller
-    participant DB as PostgreSQL
+    participant User as User (Web Browser)
+    participant UI as Next.js 15 Frontend
+    participant API as API Routes (/api/chat, /api/stream)
+    participant Ctrl as Controller (State Machine)
+    participant DB as PostgreSQL (Prisma)
     participant Clar as Clarifier Agent
     participant Plan as Planner Agent
     participant Code as Coder Agent
     participant Rev as Reviewer Agent
-    participant LLM as OpenRouter API
+    participant LLM as LLM Gateway (NVIDIA / Gemini)
 
-    User->>UI: "Build a Snake game with power-ups"
+    User->>UI: Enter game prompt ("Build a Snake game with power-ups")
     UI->>API: POST /api/chat {prompt}
     API->>DB: Create Session (Status: INIT)
     API->>Ctrl: start(sessionId)
@@ -81,7 +82,7 @@ sequenceDiagram
         Clar->>DB: Update Session (Status: CLARIFYING)
         Clar-->>UI: Display MCQ questions
         UI-->>User: Show questions with options
-        User->>UI: Select answers (A, B, C, D)
+        User->>UI: Select options (A, B, C, D)
         UI->>API: POST /api/chat {answers}
         API->>Ctrl: start(sessionId, answers)
         Ctrl->>Clar: clarify(answers, history)
@@ -103,16 +104,16 @@ sequenceDiagram
         UI->>API: GET /api/stream?sessionId
         API->>Code: build(plan)
         Code->>LLM: Blueprint + coder system prompt
-        loop Real-time streaming
+        loop Real-time SSE code streaming
             LLM-->>Code: Code chunks
             Code-->>UI: SSE: code chunk
-            UI-->>User: Live code + preview update
+            UI-->>User: Live code + iframe preview update
         end
         Code->>DB: Update Session (code, Status: REVIEW)
     end
 
     rect rgb(245, 158, 11, 0.1)
-        Note over Ctrl,Rev: REVIEW PHASE (max 3 iterations)
+        Note over Ctrl,Rev: REVIEW PHASE (max 5 iterations)
         API->>Rev: review(plan, code, summary)
         Rev->>LLM: Code + plan + QA prompt
         LLM-->>Rev: PASS / FAIL + feedback
@@ -120,7 +121,7 @@ sequenceDiagram
             Rev->>DB: Update Session (Status: COMPLETED)
             API-->>UI: SSE: complete
             UI-->>User: Playable game rendered
-        else FAIL (attempts < 3)
+        else FAIL (attempts < 5)
             Rev->>DB: Update Session (Status: REBUILD)
             Rev->>Code: Rebuild with feedback
             Code->>LLM: Previous code + fix instructions
@@ -128,14 +129,12 @@ sequenceDiagram
                 LLM-->>Code: Fixed code chunks
                 Code-->>UI: SSE: code chunk
             end
-            Note over Rev: Loop back to review
+            Note over Rev: Loop back to review (up to 5 passes)
         end
     end
 
     User->>UI: Download ZIP / View code / Play game
 ```
-
-> **Full system architecture diagram** available as a detailed PDF: [`docs/codeplay-flow-diagram.pdf`](./docs/codeplay-flow-diagram.pdf)
 
 ---
 
@@ -163,7 +162,7 @@ The Clarifier computes a confidence score based on how well the user's answers c
 | **Frontend** | Next.js 15, React 19, TailwindCSS, Framer Motion |
 | **Backend** | Node.js, TypeScript, Turborepo |
 | **Database** | PostgreSQL, Prisma ORM 7, Neon DB |
-| **AI / LLM** | OpenRouter API, multi-model support |
+| **AI / LLM Gateway** | NVIDIA NIM API (OpenAI Client SDK), Google GenAI SDK (Gemini Pro) |
 | **Auth** | NextAuth v5, Google OAuth, Guest Auth |
 | **DevOps** | Docker, GitHub Actions, Oracle Cloud |
 | **Streaming** | Server-Sent Events (SSE) |
@@ -176,10 +175,10 @@ The Clarifier computes a confidence score based on how well the user's answers c
 ```
 CodePlay/
 ├── apps/
-│   └── web/                    # Next.js 15 frontend (App Router)
+│   └── web/                    # Next.js 15 web application (App Router)
 │       └── src/
-│           ├── app/            # Pages: landing, login, builder
-│           ├── components/     # ChatInterface, CodeViewer, GamePreview, …
+│           ├── app/            # Pages & API routes (chat, stream, sessions, credits)
+│           ├── components/     # ChatInterface, CodeViewer, GamePreview, SessionHistory
 │           ├── context/        # GameBuilderContext, CreditsContext
 │           ├── lib/            # Utilities, credit management helpers
 │           └── auth.ts         # NextAuth v5 configuration
@@ -187,13 +186,13 @@ CodePlay/
 │   ├── agents/                 # Clarifier, Planner, Coder, Reviewer agents
 │   ├── controller/             # Session orchestrator & state machine
 │   └── model/
-│       ├── db/                 # Prisma schema, client, migrations
-│       ├── llm/                # OpenRouter client — caching & retry logic
-│       └── types.ts            # Shared TypeScript types across packages
+│       ├── db/                 # Prisma schema, client, generated client
+│       ├── llm/                # LLM Gateway — NVIDIA & Gemini clients, caching & retry logic
+│       └── types.ts            # Shared TypeScript interfaces across packages
+├── docs/                       # System architecture diagrams & technical docs
 ├── .github/
 │   └── workflows/              # CI/CD: build → push to GHCR → SSH deploy
 ├── Dockerfile                  # Production multi-stage container
-├── main.ts                     # CLI entry point (run without UI)
 └── turbo.json                  # Turborepo pipeline config
 ```
 
@@ -205,7 +204,7 @@ CodePlay/
 
 - **Node.js** 22+
 - **PostgreSQL** (local or [Neon DB](https://neon.tech) for serverless)
-- **OpenRouter API Key** — [get one here](https://openrouter.ai/keys)
+- **NVIDIA NIM API Key** — [get one here](https://build.nvidia.com/) or **Google Gemini API Key** — [get one here](https://aistudio.google.com/)
 - **Google OAuth Credentials** (optional, for social login)
 
 ### Installation
@@ -238,8 +237,15 @@ NEXTAUTH_URL="http://localhost:3000"
 GOOGLE_CLIENT_ID="your-google-client-id"
 GOOGLE_CLIENT_SECRET="your-google-client-secret"
 
-# OpenRouter
-OPENROUTER_API_KEY="your-openrouter-api-key"
+# LLM Providers (NVIDIA NIM & Google Gemini)
+NVDIA_KEY="your-nvidia-nim-api-key"
+NVIDIA_CLARIFY_MODEL="qwen/qwen2.5-coder-32b-instruct"
+NVIDIA_PLAN_MODEL="moonshotai/kimi-k2-thinking"
+NVIDIA_CODE_MODEL="qwen/qwen2.5-coder-32b-instruct"
+NVIDIA_REVIEW_MODEL="qwen/qwen2.5-coder-32b-instruct"
+
+# Gemini API Keys (comma-separated for key rotation)
+GEMINI_API_KEYS="your-gemini-api-key-1,your-gemini-api-key-2"
 
 # App
 NEXT_PUBLIC_APP_URL="http://localhost:3000"
@@ -250,24 +256,14 @@ NEXT_PUBLIC_APP_URL="http://localhost:3000"
 ```bash
 # Push schema to your database and generate Prisma client
 npx prisma db push
-
-# (Optional) Seed with initial data
-npx prisma db seed
 ```
 
 ### Running Locally
 
-**Web UI (recommended):**
-
 ```bash
+# Start the web app in development mode
 npm run dev
 # App available at http://localhost:3000
-```
-
-**CLI mode** (headless game generation):
-
-```bash
-npx ts-node main.ts
 ```
 
 ### Docker Deployment
@@ -291,12 +287,12 @@ docker run -p 3000:3000 --env-file .env ghcr.io/tejabudumuru3/codeplay:latest
 
 ## 🎮 How It Works
 
-1. **Describe your game** — Enter any game idea in plain English ("a snake game where apples give power-ups")
-2. **Clarifier Agent interviews you** — Asks targeted MCQ questions about mechanics, controls, difficulty, and visual style
-3. **Confidence threshold reached** — Once the Clarifier is ≥ 80% confident in the spec, the Planner takes over
-4. **Planner creates a blueprint** — Selects framework (Vanilla Canvas or Phaser 3), defines mechanics, systems, assets, and the full game loop
-5. **Coder generates your game** — Streams complete HTML/CSS/JS to your browser in real time; you watch the code appear live
-6. **Reviewer QA-checks the build** — Validates against the plan; if issues are found, triggers a targeted rebuild (up to 3 passes)
+1. **Describe your game** — Enter any game idea in plain English ("a snake game where apples give power-ups").
+2. **Clarifier Agent interviews you** — Asks targeted MCQ questions about mechanics, controls, difficulty, and visual style.
+3. **Confidence threshold reached** — Once the Clarifier is ≥ 80% confident in the spec, the Planner takes over.
+4. **Planner creates a blueprint** — Selects framework (Vanilla Canvas or Phaser 3), defines mechanics, systems, assets, and the full game loop.
+5. **Coder generates your game** — Streams complete single-file HTML/CSS/JS to your browser in real time; you watch the code appear live.
+6. **Reviewer QA-checks the build** — Validates against the plan; if issues are found, triggers a targeted rebuild (up to 5 passes).
 7. **Play your game** — The finished game renders directly in your browser. Download it as a ZIP to keep forever.
 
 ---
@@ -309,15 +305,15 @@ Splitting responsibilities across four specialized agents dramatically improves 
 
 ### Why SSE Instead of WebSockets?
 
-Server-Sent Events are unidirectional (server → client), which is all that's needed for streaming code generation. SSE requires no upgrade handshake, works over standard HTTP/2, and is simpler to deploy behind reverse proxies and CDNs than WebSockets. The tradeoff is that SSE is one-way, but all user interactions (chat messages, navigation) already go through the standard REST API.
+Server-Sent Events are unidirectional (server → client), which is all that's needed for streaming code generation. SSE requires no upgrade handshake, works over standard HTTP/2, and is simpler to deploy behind reverse proxies and CDNs than WebSockets. The tradeoff is that SSE is one-way, but all user interactions (chat messages, navigation) already go through standard REST API endpoints.
 
 ### Why SHA-256 Caching for LLM Calls?
 
-LLM inference is expensive and deterministic for identical inputs. By hashing the exact prompt + model + parameters, CodePlay avoids re-calling the API for repeated or near-identical game ideas. This is particularly valuable during development and for common game templates (e.g., "simple snake game") that many users request.
+LLM inference is expensive and deterministic for identical inputs. By hashing the exact prompt + model + tier parameters, CodePlay avoids re-calling the API for repeated or near-identical game ideas. This cuts API costs and significantly speeds up common game generation requests.
 
-### Why OpenRouter Instead of a Single LLM Provider?
+### Why Dual-Tier LLM Gateway (NVIDIA NIM + Google Gemini)?
 
-OpenRouter provides a unified API across dozens of models (GPT-4o, Claude, Gemini, Llama, Mistral, etc.). This means CodePlay can route different agents to the best model for each task — a cheaper model for clarification questions, a stronger model for code generation — and switch providers without changing application code.
+CodePlay routes traffic intelligently based on tier and model strengths. NVIDIA NIM handles Free tier requests with ultra-fast specialized open models (Qwen 2.5 Coder, Kimi K2 Thinking), while Google Gemini handles Pro tier requests. Built-in model cascade logic automatically falls back if a primary model experiences capacity limits.
 
 ### Why Single-File HTML Output?
 
@@ -332,15 +328,14 @@ Generating a single self-contained `index.html` with all CSS and JavaScript inli
 | ✅ Done | Multi-agent pipeline (Clarifier → Planner → Coder → Reviewer) |
 | ✅ Done | Real-time SSE code streaming |
 | ✅ Done | Dual framework support (Vanilla Canvas + Phaser 3) |
-| ✅ Done | LLM response caching |
-| ✅ Done | Credit system with guest support |
+| ✅ Done | Multi-tier LLM gateway (NVIDIA NIM & Google Gemini) with SHA-256 caching |
+| ✅ Done | Credit system & NextAuth v5 Guest mode |
 | ✅ Done | Docker + GitHub Actions CI/CD |
 | 🔄 Planned | Game gallery — browse and remix community-generated games |
 | 🔄 Planned | Iterative editing — modify an existing game with follow-up prompts |
 | 🔄 Planned | Multi-file project output (separate HTML/CSS/JS assets) |
 | 🔄 Planned | Custom model selection per agent in the UI |
 | 🔄 Planned | Multiplayer game support |
-| 🔄 Planned | Export to itch.io / GameJolt directly |
 
 ---
 
