@@ -3,6 +3,7 @@ import { auth } from "@/auth";
 import { prisma } from "@packages/model/db/client";
 import { Controller } from "@packages/controller/index";
 import { consumeCredit, refundCredit } from "@/lib/credits";
+import { classifyError } from "@packages/model/llm/safeApiCall";
 
 export async function POST(req: NextRequest) {
   try {
@@ -85,18 +86,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Missing prompt or sessionId" }, { status: 400 });
   } catch (error) {
     console.error("[/api/chat] Error:", error);
-    const rawMsg = error instanceof Error ? error.message : "Internal server error";
-    let friendlyMsg = rawMsg;
-    if (rawMsg.includes("503") || rawMsg.includes("ResourceExhausted") || rawMsg.includes("request limit")) {
-      friendlyMsg = "The NVIDIA servers are currently overloaded (503 Service Unavailable). This is a temporary server issue. Your credit has been fully refunded. Please try again in a few moments.";
-    } else if (rawMsg.toLowerCase().includes("timeout") || rawMsg.toLowerCase().includes("timed out")) {
-      friendlyMsg = "The request timed out. This is a temporary server issue. Your credit has been fully refunded. Please try again.";
-    } else {
-      friendlyMsg = `${rawMsg} (Your credit has been fully refunded.)`;
-    }
+    const classified = classifyError(error);
+    const status = classified.statusCode >= 400 && classified.statusCode < 600 ? classified.statusCode : 500;
     return NextResponse.json(
-      { error: friendlyMsg },
-      { status: 500 }
+      { error: classified.userMessage, code: classified.code },
+      { status }
     );
   }
 }

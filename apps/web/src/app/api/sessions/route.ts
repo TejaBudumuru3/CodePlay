@@ -36,7 +36,7 @@ export async function GET() {
     });
 
     // Extract title from plan JSON if available
-    const formatted = sessions.map((s) => ({
+    const formatted = sessions.map((s: { id: string; prompt: string; status: any; createdAt: Date; plan: any }) => ({
       id: s.id,
       prompt: s.prompt,
       status: s.status,

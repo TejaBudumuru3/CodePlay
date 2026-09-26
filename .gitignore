@@ -9,10 +9,9 @@ packages/model/llm/index.js
 packages/model/llm/tsconfig.tsbuildinfo
 packages/model/llm/utils.js
 packages/model/types.js
-.env
+.env*
 .env.local
 .vercel
-.env*.local
 packages/agents/dist/
 .history/
 packages/controller/dist/

@@ -5,12 +5,12 @@
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
 generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 enum status {
@@ -74,13 +74,15 @@ model Session {
   prompt        String
   status        status   @default(INIT)
   retries       Int      @default(0)
-  error         String?
-  createdAt     DateTime @default(now())
-  clarification Json?
-  plan          Json?
-  code          Json?
-  review        Json?
-  reviewCount   Int      @default(0)
+  error          String?
+  failureDetails Json?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @default(now()) @updatedAt
+  clarification  Json?
+  plan           Json?
+  code           Json?
+  review         Json?
+  reviewCount    Int      @default(0)
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

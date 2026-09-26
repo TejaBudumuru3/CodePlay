@@ -41,7 +41,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       // For Google OAuth — upsert the user in our DB manually (no adapter)
       if (account?.provider === "google" && profile?.email) {
         try {
-          await prisma.user.upsert({
+          const dbUser = await prisma.user.upsert({
             where: { email: profile.email },
             update: {
               name: profile.name ?? undefined,
@@ -52,15 +52,11 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
               name: profile.name ?? null,
               image: (profile as Record<string, string>).picture ?? null,
             },
-          });
-          // Fetch the DB user to get the real cuid ID into the token
-          const dbUser = await prisma.user.findUnique({
-            where: { email: profile.email },
             select: { id: true },
           });
           if (dbUser) user.id = dbUser.id;
         } catch (err) {
-          console.error("[Google signIn] DB error:", err);
+          console.error("[Google signIn] DB upsert failed:", err);
           return false;
         }
       }

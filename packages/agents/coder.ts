@@ -860,9 +860,14 @@ VEHICLE_PHYSICS (Phaser) — angle-based car movement:
     : '';
 }
 
-function inferCapabilitiesFromMechanics(mechanics: { name: string, description: string }[]): string[] {
+function inferCapabilitiesFromMechanics(mechanics?: { name?: string, description?: string }[]): string[] {
+  if (!mechanics || !Array.isArray(mechanics) || mechanics.length === 0) return [];
   const caps: string[] = [];
-  const text = mechanics.map(m => m.name + ' ' + m.description).join(' ').toLowerCase();
+  const text = mechanics
+    .filter(Boolean)
+    .map(m => `${m.name ?? ''} ${m.description ?? ''}`)
+    .join(' ')
+    .toLowerCase();
   if (text.includes('scroll') || text.includes('endless') || text.includes('infinite')) caps.push('SCROLLING_WORLD');
   if (text.includes('lane')) caps.push('LANE_SYSTEM');
   if (text.includes('swipe')) caps.push('SWIPE_GESTURE');
@@ -939,9 +944,9 @@ export class CoderAgent {
 
     const stateOverride = plan.stateManagement ? `
     STATE MACHINE (implement ALL states and transitions):
-    States: ${plan.stateManagement.states.join(', ')}
+    States: ${(plan.stateManagement.states ?? []).join(', ')}
     Transitions:
-    ${plan.stateManagement.transitions.map(t => `  ${t.from} → ${t.to} on: ${t.trigger}`).join('\n')}
+    ${(plan.stateManagement.transitions ?? []).map(t => `  ${t.from} → ${t.to} on: ${t.trigger}`).join('\n')}
     ` : '';
 
     const finalSystemPrompt = systemPrompt + mobileOverride;
@@ -980,21 +985,21 @@ export class CoderAgent {
             ${stateOverride}
 
             VISUAL ASSETS — draw EXACTLY as described using gradients and multi-layer techniques:
-            ${plan.assetDescriptions.map(a => `- ${a}`).join('\n')}
+            ${(plan.assetDescriptions ?? []).map(a => `- ${a}`).join('\n')}
 
             UI ELEMENTS — implement ALL:
             ${(plan.uiElements || []).map(u => `- ${u}`).join('\n')}
 
             MECHANICS (implement ALL — this is the complete list):
-            ${plan.mechanics.map((m, i) => `${i + 1}. ${m.name}: ${m.description}`).join('\n')}
+            ${(plan.mechanics ?? []).map((m, i) => `${i + 1}. ${m.name}: ${m.description}`).join('\n')}
 
             CONTROLS:
-            ${plan.controls.map(c => `- ${c.input}: ${c.action}`).join('\n')}
+            ${(plan.controls ?? []).map(c => `- ${c.input}: ${c.action}`).join('\n')}
 
-            SYSTEMS: ${plan.systems.join(', ')}
+            SYSTEMS: ${(plan.systems ?? []).join(', ')}
 
             GAME LOOP (follow step-by-step):
-            ${plan.gameLoopDescription}
+            ${plan.gameLoopDescription ?? ''}
 
             ${gameSpecificRules}
 

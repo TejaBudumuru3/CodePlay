@@ -1,7 +1,7 @@
 {
   "devDependencies": {
     "@types/node": "^25.3.0",
-    "prisma": "^7.4.0",
+    "prisma": "^6.19.3",
     "tsx": "^4.7.1",
     "turbo": "^2.8.20",
     "typescript": "^5.3.3"
@@ -18,7 +18,9 @@
   ],
   "description": "",
   "dependencies": {
-    "dotenv": "^16.4.5"
+    "@prisma/client": "6.19.3",
+    "dotenv": "^16.4.5",
+    "next": "16.3.6"
   },
   "scripts": {
     "start": "npm run start -w web",

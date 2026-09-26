@@ -106,6 +106,9 @@ function BuilderLayoutContent() {
                 title={tab.label}
               >
                 <Icon className={cn("w-5 h-5", isActive ? "text-slate-800" : "text-slate-400 group-hover:text-slate-600")} />
+                {status === "FAILED" && tab.id === "chat" && (
+                  <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse ring-2 ring-white" />
+                )}
               </button>
             );
           })}
@@ -199,13 +202,18 @@ function BuilderLayoutContent() {
             key={id}
             onClick={() => setActiveTab(id, true)}
             className={cn(
-              "flex-1 flex flex-col items-center gap-1 py-3 text-[10px] font-medium transition-all duration-200",
+              "flex-1 flex flex-col items-center gap-1 py-3 text-[10px] font-medium transition-all duration-200 relative",
               activeTab === id
                 ? "text-primary"
                 : "text-muted-foreground hover:text-foreground"
             )}
           >
-            <Icon className={cn("w-5 h-5", activeTab === id && "drop-shadow-[0_0_8px_rgba(244,114,182,0.5)]")} />
+            <div className="relative">
+              <Icon className={cn("w-5 h-5", activeTab === id && "drop-shadow-[0_0_8px_rgba(244,114,182,0.5)]")} />
+              {status === "FAILED" && id === "chat" && (
+                <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-rose-500 animate-pulse ring-1 ring-white" />
+              )}
+            </div>
             {label}
           </button>
         ))}

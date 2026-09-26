@@ -1,5 +1,10 @@
 import { prisma } from "../db/client";
 
+/**
+ * @deprecated Use `safeApiCall` from `./safeApiCall` instead.
+ * `safeApiCall` provides standardized error classification, structured retry policies,
+ * jittered exponential backoff, and runtime Zod validation.
+ */
 export async function RunWithRetry(
     fn: () => Promise<any>,
     sessionId: string,
