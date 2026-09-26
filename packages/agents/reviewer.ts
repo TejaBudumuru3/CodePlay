@@ -1,7 +1,7 @@
 import { LLM } from "../model/llm";
 import { prisma } from "../model/db/client";
-import { PlanResponse, ReviewerResponse } from "../model/types";
-import { Prisma } from "../model/db/generated/prisma/client";
+import { PlanResponse, ReviewerResponse, ReviewerResponseSchema } from "../model/types";
+import { Prisma } from "@prisma/client";
 
 export class ReviewerAgent {
   private llm: LLM;
@@ -247,14 +247,15 @@ export class ReviewerAgent {
 
     const finalPrompt = prompt + attemptNote;
 
-    const response = await this.llm.generate<ReviewerResponse>({
+    const response = (await this.llm.generate<ReviewerResponse>({
       prompt: finalPrompt,
       system: SYSTEM_PROMPT,
       json: true,
+      schema: ReviewerResponseSchema,
       stream: false,
       mode: 'REVIEW',
       sessionId: this.sessionId
-    }) as ReviewerResponse
+    })) as ReviewerResponse;
 
     if (response) {
       if (!response.passed && (!response.issues || response.issues.length === 0)) {
@@ -267,7 +268,7 @@ export class ReviewerAgent {
       }
     }
 
-    const status = response.passed ? 'COMPLETED' : 'REBUILD'
+    const status = response?.passed ? 'COMPLETED' : 'REBUILD';
     await prisma.session.update({
       where: {
         id: this.sessionId
@@ -276,8 +277,10 @@ export class ReviewerAgent {
         status: status,
         review: response as unknown as Prisma.InputJsonObject
       }
-    })
+    }).catch((err) => {
+      console.warn('[ReviewerAgent] Failed to update session in DB:', err);
+    });
 
-    return response
+    return response;
   }
 }

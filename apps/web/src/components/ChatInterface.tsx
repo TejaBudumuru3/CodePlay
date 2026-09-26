@@ -22,6 +22,7 @@ export default function ChatInterface({
   const router = useRouter();
   const {
     status,
+    error,
     messages,
     isLoading,
     startNewGame,
@@ -489,7 +490,7 @@ export default function ChatInterface({
                 ) : (
                   <>
                     <p className="text-red-600/80 text-[14px] mb-6">
-                      An unexpected error interrupted the builder. You can retry the current step.
+                      {error || "An unexpected error interrupted the builder. You can retry the current step."}
                     </p>
                     <div className="flex gap-3">
                       <button onClick={resetGame} className="flex-1 py-3 rounded-xl bg-white border border-red-200 text-red-600 font-semibold hover:bg-red-50 transition-all active:scale-[0.98]">

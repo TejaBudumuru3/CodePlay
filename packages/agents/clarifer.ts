@@ -1,7 +1,7 @@
 import { LLM } from "../model/llm";
 import { prisma } from "../model/db/client";
-import { ClarificationResponse } from "../model/types";
-import { Prisma } from "../model/db/generated/prisma/client";
+import { ClarificationResponse, ClarificationResponseSchema } from "../model/types";
+import { Prisma } from "@prisma/client";
 
 const SYSTEM_PROMPT = `
 You are an elite Lead Game Designer. Your job is to extract the exact mechanical and visual vision from a user's raw game idea using a structured expert-level Multiple Choice Questionnaire.
@@ -166,18 +166,19 @@ export class ClarifierAgent {
     async clarify(gameIdea: string, conversationHistory: ClarificationResponse | undefined = undefined): Promise<ClarificationResponse> {
 
         const prompt = conversationHistory
-            ? `PREVIOUS SUMMARY: ${conversationHistory.summary}\n\nQUESTIONS ASKED:\n${conversationHistory.questions.map((q, i) =>
-                `Q${i + 1}: ${q.question}\n${q.options.map(o => `  ${o.key}.) ${o.text}`).join('\n')}`
+            ? `PREVIOUS SUMMARY: ${conversationHistory.summary ?? ''}\n\nQUESTIONS ASKED:\n${(conversationHistory.questions ?? []).map((q, i) =>
+                `Q${i + 1}: ${q.question}\n${(q.options ?? []).map(o => `  ${o.key}.) ${o.text}`).join('\n')}`
             ).join('\n\n')}\n\nUSER ANSWER: ${gameIdea}`
             : `Game idea: ${gameIdea}\nAnalyze and ask clarifying questions.`;
 
-
-        const response = await this.llm.generate<ClarificationResponse>({
+        const response = (await this.llm.generate<ClarificationResponse>({
             prompt: prompt,
             system: conversationHistory ? FOLLOWUP_PROMPT : SYSTEM_PROMPT,
             mode: "CLARIFY",
             sessionId: this.sessionId,
-            json: true        }) as ClarificationResponse
+            json: true,
+            schema: ClarificationResponseSchema,
+        })) as ClarificationResponse;
 
         if (response) {
             const nextStatus = response.isSufficient ? 'PLANNING' : 'CLARIFYING';
@@ -189,8 +190,10 @@ export class ClarifierAgent {
                     status: nextStatus,
                     clarification: response as unknown as Prisma.InputJsonObject,
                 }
-            })
+            }).catch((err) => {
+                console.warn('[ClarifierAgent] Failed to update session in DB:', err);
+            });
         }
-        return response as ClarificationResponse;
+        return response;
     }
 }

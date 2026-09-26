@@ -143,19 +143,31 @@ export function GameBuilderProvider({ children, userTier = 'FREE' }: { children:
 
     resetTimeout();
 
+    const safeParse = <T = any>(data: string): T | null => {
+      try {
+        return JSON.parse(data);
+      } catch (err) {
+        console.warn("[SSE] Failed to parse event payload:", err, data);
+        return null;
+      }
+    };
+
     es.addEventListener("code_chunk", (e) => {
       resetTimeout();
-      const { chunk } = JSON.parse(e.data);
+      const parsed = safeParse<{ chunk: string }>(e.data);
+      if (!parsed?.chunk) return;
       setState((prev) => ({
         ...prev,
-        streamingCode: prev.streamingCode + chunk,
+        streamingCode: prev.streamingCode + parsed.chunk,
         status: 'BUILDING'
       }));
     });
 
     es.addEventListener("status", (e) => {
       resetTimeout();
-      const { status, attempt, max, isRetry, message } = JSON.parse(e.data);
+      const parsed = safeParse<{ status: string; attempt?: number; max?: number; isRetry?: boolean; message?: string }>(e.data);
+      if (!parsed) return;
+      const { status, attempt, max, isRetry, message } = parsed;
       setState((prev) => ({
         ...prev,
         status: status as SessionStatus,
@@ -166,42 +178,45 @@ export function GameBuilderProvider({ children, userTier = 'FREE' }: { children:
         addMessage("status", message);
       }
       else if (status === 'REVIEW') {
-        addMessage("status", `Code Reviewer reviewing the code${attempt ? ` (attempt ${attempt}/${max})` : '...'}`)
+        addMessage("status", `Code Reviewer reviewing the code${attempt ? ` (attempt ${attempt}/${max})` : '...'}`);
       }
       else if (status === 'REBUILD') {
-        addMessage("status", `Issue found, resolving the issues ${attempt ? `(attempt ${attempt}/${max})` : "..."} `)
-        setState((prev) => ({ ...prev, streamingCode: "", }))
+        addMessage("status", `Issue found, resolving the issues ${attempt ? `(attempt ${attempt}/${max})` : "..."} `);
+        setState((prev) => ({ ...prev, streamingCode: "", }));
       }
-    })
+    });
 
     es.addEventListener("review_result", (e) => {
       resetTimeout();
-      const { passed, issues } = JSON.parse(e.data);
+      const parsed = safeParse<{ passed: boolean; issues?: any[] }>(e.data);
+      if (!parsed) return;
+      const { passed, issues } = parsed;
       if (passed) {
-        addMessage("status", 'code review passed ')
+        addMessage("status", 'code review passed ');
       }
       else {
-        addMessage('status', `Reviewer found ${issues?.length ?? 0} issues(s) - fixing...`)
+        addMessage('status', `Reviewer found ${issues?.length ?? 0} issues(s) - fixing...`);
       }
-    })
-
+    });
 
     es.addEventListener("complete", (e) => {
       if (timeoutId) clearTimeout(timeoutId);
-      const { code } = JSON.parse(e.data);
+      const parsed = safeParse<{ code: string; model?: string }>(e.data);
+      const code = parsed?.code || '';
+      const model = parsed?.model || '';
       setState((prev) => ({
         ...prev,
         status: "COMPLETED",
-        code: { code },
+        code: { code, model },
         streamingCode: "",
         isLoading: false
-      }))
+      }));
 
-      addMessage('agent', 'Your game is ready, checK the Code and Preview tabs')
+      addMessage('agent', 'Your game is ready, check the Code and Preview tabs');
       void loadSessionsRef.current();
       es.close();
       eventSourceRef.current = null;
-    })
+    });
 
     es.addEventListener("error", (e) => {
       if (timeoutId) clearTimeout(timeoutId);

@@ -1,7 +1,7 @@
 import { LLM } from "../model/llm";
 import { prisma } from "../model/db/client";
-import { PlanResponse } from "../model/types";
-import { Prisma } from "../model/db/generated/prisma/client";
+import { PlanResponse, PlanResponseSchema } from "../model/types";
+import { Prisma } from "@prisma/client";
 
 const SYSTEM_PROMPT = `
 You are an elite Senior Game Architect with 15 years of experience shipping browser games. Given clarified game requirements, produce a precise, exhaustive technical blueprint for a single-file browser game.
@@ -370,13 +370,14 @@ export class PlannerAgent {
         Create the complete game blueprint following the exact JSON structure specified.
         `
 
-    const response = await this.llm.generate<PlanResponse>({
+    const response = (await this.llm.generate<PlanResponse>({
       prompt: prompt,
       system: SYSTEM_PROMPT,
       mode: 'PLAN',
       json: true,
+      schema: PlanResponseSchema,
       sessionId: this.sessionId
-    }) as PlanResponse;
+    })) as PlanResponse;
 
     if (response) {
       await prisma.session.update({
@@ -387,7 +388,9 @@ export class PlannerAgent {
           plan: response as unknown as Prisma.InputJsonObject,
           status: 'BUILDING'
         }
-      })
+      }).catch((err) => {
+        console.warn('[PlannerAgent] Failed to update session in DB:', err);
+      });
     }
 
     return response;

@@ -4,6 +4,7 @@ import { LLM, Tier } from "@packages/model/llm";
 import { CoderAgent } from "@packages/agents/coder";
 import { ReviewerAgent } from "@packages/agents/reviewer";
 import { BuildResponse, ClarificationResponse, PlanResponse, ReviewerResponse } from "@packages/model/types";
+import { classifyError } from "@packages/model/llm/safeApiCall";
 import { auth } from "@/auth";
 
 export const dynamic = 'force-dynamic';
@@ -64,6 +65,13 @@ export async function GET(req: NextRequest) {
                         message: isTimeout ? "NVIDIA request timed out. Retrying automatically..." : `Request failed. Retrying...`
                     });
                 };
+
+                if (!gameSession.plan) {
+                    send("error", { message: "No game plan found for this session. Please complete the planning stage first." });
+                    controller.close();
+                    return;
+                }
+
                 const plan = gameSession.plan as unknown as PlanResponse;
                 const coder = new CoderAgent(llm, sessionId);
                 const reviewer = new ReviewerAgent(sessionId, llm);
@@ -106,7 +114,8 @@ export async function GET(req: NextRequest) {
                         where: { id: sessionId },
                         data: {
                             code: {
-                                code: fullCode
+                                code: fullCode,
+                                model: llm.getLastUsedModel() || (gameSession.user.tier === 'PRO' ? 'gemini-2.5-pro' : 'gemini-3.5-flash-lite')
                             },
                             status: "REVIEW"
                         }
@@ -151,7 +160,10 @@ export async function GET(req: NextRequest) {
                         await prisma.session.update({
                             where: { id: sessionId },
                             data: {
-                                code: { code: fullCode },
+                                code: {
+                                    code: fullCode,
+                                    model: llm.getLastUsedModel() || (gameSession.user.tier === 'PRO' ? 'gemini-2.5-pro' : 'gemini-3.5-flash-lite')
+                                },
                                 status: 'REVIEW'
                             }
                         })
@@ -176,7 +188,8 @@ export async function GET(req: NextRequest) {
                             }
                         });
 
-                        send("complete", { code })
+                        const finalModel = llm.getLastUsedModel() || (gameSession.code as any)?.model || (gameSession.user.tier === 'PRO' ? 'gemini-2.5-pro' : 'gemini-3.5-flash-lite');
+                        send("complete", { code, model: finalModel });
                         currentStatus = 'COMPLETED';
                     }
                     else {
@@ -213,19 +226,14 @@ export async function GET(req: NextRequest) {
                 }
             }
             catch (err) {
-                const rawMsg = err instanceof Error ? err.message : "Unknown error";
-                let friendlyMsg = rawMsg;
-                if (rawMsg.includes("503") || rawMsg.includes("ResourceExhausted") || rawMsg.includes("request limit")) {
-                    friendlyMsg = "The NVIDIA servers are currently overloaded (503 Service Unavailable). This is a temporary server issue. Please try again in a few moments.";
-                } else if (rawMsg.toLowerCase().includes("timeout") || rawMsg.toLowerCase().includes("timed out")) {
-                    friendlyMsg = "The request timed out. This is a temporary server issue. Please try again.";
-                }
-                send("error", { message: friendlyMsg })
+                console.error("[/api/stream] Error:", err);
+                const classified = classifyError(err);
+                send("error", { message: classified.userMessage, code: classified.code });
                 await prisma.session.update({
                     where: { id: sessionId },
                     data: {
                         status: 'FAILED',
-                        error: friendlyMsg
+                        error: classified.userMessage
                     }
                 }).catch(() => {});
             }

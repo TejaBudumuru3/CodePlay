@@ -1,5 +1,6 @@
 import { prisma } from "../model/db/client";
 import { LLM, Tier } from "../model/llm";
+import { classifyError } from "../model/llm/safeApiCall";
 import { ClarifierAgent } from "../agents/clarifer";
 import { PlannerAgent } from "../agents/planner";
 import { CoderAgent } from "../agents/coder";
@@ -64,7 +65,7 @@ export class Controller {
                     }
                 case 'PLANNING':
                     const planReq = session.clarification as unknown as ClarificationResponse
-                    const summary = planReq?.summary || session.prompt;
+                    const summary = (typeof planReq?.summary === 'string' && planReq.summary.trim().length > 0) ? planReq.summary : session.prompt;
                     const plan = await plannerAgent.plan(summary, session.prompt)
 
                     return {
@@ -118,21 +119,21 @@ export class Controller {
             }
         }
         catch (error) {
-
-            console.error(error);
+            console.error('[Controller Error]:', error);
+            const classified = classifyError(error);
             await prisma.session.update({
                 where: {
                     id: this.sessionId
                 },
                 data: {
                     status: 'FAILED',
-                    error: error instanceof Error ? error.message : "Unknown error"
+                    error: classified.userMessage
                 }
-            })
+            }).catch(() => { });
             return {
                 type: 'ERROR',
-                data: error instanceof Error ? error.message : "Unknown error"
-            }
+                data: classified.userMessage
+            };
         }
     }
 }

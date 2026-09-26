@@ -7,10 +7,10 @@ import { useSearchParams } from "next/navigation";
 import Image from "next/image";
 
 const errorMessages: Record<string, string> = {
-  Configuration: "Server configuration error. Check that DATABASE_URL and NEXTAUTH_SECRET are set in .env.local.",
-  AccessDenied: "Access denied.",
+  Configuration: "Authentication service is temporarily unavailable. Please try again shortly.",
+  AccessDenied: "Could not complete sign in due to a temporary service issue. Please try again.",
   Verification: "Verification link expired. Please try again.",
-  CredentialsSignin: "Could not sign in. Check server logs.",
+  CredentialsSignin: "Could not sign in. Please verify your details and try again.",
   Default: "An error occurred during sign in. Please try again.",
 };
 

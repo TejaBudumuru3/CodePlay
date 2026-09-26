@@ -9,7 +9,8 @@
   },
   "dependencies": {
     "db": "*",
-    "llm": "*"
+    "llm": "*",
+    "zod": "^4.6.5"
   },
   "keywords": [],
   "author": "",
