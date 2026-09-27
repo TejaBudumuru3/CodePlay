@@ -4,12 +4,24 @@ import Credentials from "next-auth/providers/credentials";
 import { prisma } from "@packages/model/db/client";
 import { headers } from "next/headers";
 
+function normalizeText(raw?: string | null): string | undefined {
+  if (!raw) return undefined;
+  try {
+    const decoded = decodeURIComponent(raw);
+    const normalizedText = Buffer.from(decoded, 'latin1').toString('utf8')
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, "").trim();
+    return normalizedText
+  }
+  catch (e) {
+    return raw
+  }
+}
 export const { handlers, signIn, signOut, auth } = NextAuth({
   // No PrismaAdapter — Credentials provider is incompatible with it in NextAuth v5 JWT mode.
   // User persistence is handled manually in the signIn callback below.
   trustHost: true,
   secret: process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET,
-  debug: true,
+  // debug: true,
   session: {
     strategy: "jwt",
   },
@@ -47,7 +59,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         try {
           const headerList = await headers();
           const country = headerList.get("cf-ipcountry") || undefined;
-          const city = headerList.get("cf-ipcity") || undefined;
+          const city = normalizeText(headerList.get("cf-ipcity") || null);
+          const region = normalizeText(headerList.get("cf-region") || null);
 
           const dbUser = await prisma.user.upsert({
             where: { email: profile.email },
@@ -55,14 +68,14 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
               name: profile.name ?? undefined,
               image: (profile as Record<string, string>).picture ?? undefined,
               country: country ?? undefined,
-              city: city ? decodeURIComponent(city) : undefined,
+              city: [city, region].filter(Boolean).join(", ") || undefined
             },
             create: {
               email: profile.email,
               name: profile.name ?? null,
               image: (profile as Record<string, string>).picture ?? null,
               country: country ?? undefined,
-              city: city ? decodeURIComponent(city) : undefined,
+              city: [city, region].filter(Boolean).join(", ") || undefined,
               emailVerified: new Date()
             },
             select: { id: true },
