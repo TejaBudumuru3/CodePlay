@@ -9,7 +9,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   // User persistence is handled manually in the signIn callback below.
   trustHost: true,
   secret: process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET,
-  debug: true,
+  // debug: true,
   session: {
     strategy: "jwt",
   },
@@ -55,14 +55,14 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
               name: profile.name ?? undefined,
               image: (profile as Record<string, string>).picture ?? undefined,
               country: country ?? undefined,
-              city: city ?? undefined,
+              city: city ? decodeURIComponent(city) : undefined,
             },
             create: {
               email: profile.email,
               name: profile.name ?? null,
               image: (profile as Record<string, string>).picture ?? null,
               country: country ?? undefined,
-              city: city ?? undefined,
+              city: city ? decodeURIComponent(city) : undefined,
               emailVerified: new Date()
             },
             select: { id: true },
