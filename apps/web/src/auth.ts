@@ -21,7 +21,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   // User persistence is handled manually in the signIn callback below.
   trustHost: true,
   secret: process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET,
-  // debug: true,
+  debug: true,
   session: {
     strategy: "jwt",
   },
