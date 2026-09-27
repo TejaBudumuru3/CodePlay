@@ -8,6 +8,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   // No PrismaAdapter — Credentials provider is incompatible with it in NextAuth v5 JWT mode.
   // User persistence is handled manually in the signIn callback below.
   trustHost: true,
+  secret: process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET,
+  debug: true,
   session: {
     strategy: "jwt",
   },
