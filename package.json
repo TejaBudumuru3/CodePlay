@@ -26,8 +26,8 @@
     "start": "npm run start -w web",
     "build": "turbo build",
     "dev": "cd apps/web && npm run dev",
-    "db:push": "prisma db push --schema=./packages/model/db/prisma/schema.prisma",
-    "db:generate": "prisma generate --schema=./packages/model/db/prisma/schema.prisma"
+    "db:push": "cd packages/model/db && prisma db push",
+    "db:generate": "cd packages/model/db && prisma generate"
   },
   "keywords": [],
   "author": "",

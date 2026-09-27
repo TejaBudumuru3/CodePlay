@@ -39,6 +39,8 @@ model User {
   credits           Int       @default(5)
   lastCreditResetAt DateTime  @default(now())
   tier              Tier      @default(FREE)
+  country           String?
+  city              String?
   accounts          Account[]
   sessions          Session[]
 }

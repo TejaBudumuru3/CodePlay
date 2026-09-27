@@ -2,6 +2,7 @@ import NextAuth from "next-auth";
 import Google from "next-auth/providers/google";
 import Credentials from "next-auth/providers/credentials";
 import { prisma } from "@packages/model/db/client";
+import { headers } from "next/headers";
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   // No PrismaAdapter — Credentials provider is incompatible with it in NextAuth v5 JWT mode.
@@ -19,6 +20,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     Google({
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+      checks: ['state'],
     }),
     Credentials({
       id: "guest",
@@ -41,16 +43,25 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       // For Google OAuth — upsert the user in our DB manually (no adapter)
       if (account?.provider === "google" && profile?.email) {
         try {
+          const headerList = await headers();
+          const country = headerList.get("cf-ipcountry") || undefined;
+          const city = headerList.get("cf-ipcity") || undefined;
+
           const dbUser = await prisma.user.upsert({
             where: { email: profile.email },
             update: {
               name: profile.name ?? undefined,
               image: (profile as Record<string, string>).picture ?? undefined,
+              country: country ?? undefined,
+              city: city ?? undefined,
             },
             create: {
               email: profile.email,
               name: profile.name ?? null,
               image: (profile as Record<string, string>).picture ?? null,
+              country: country ?? undefined,
+              city: city ?? undefined,
+              emailVerified: new Date()
             },
             select: { id: true },
           });
